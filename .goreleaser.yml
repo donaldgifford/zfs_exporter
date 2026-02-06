@@ -1,0 +1,133 @@
+---
+version: 2
+project_name: zfs_exporter
+
+builds:
+  - id: zfs_exporter
+    binary: zfs_exporter
+    main: ./cmd/zfs_exporter/main.go
+    ldflags:
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - "7"
+
+checksum:
+  name_template: 'checksums.txt'
+
+signs:
+  - artifacts: checksum
+    args:
+      - "--batch"
+      - "--local-user"
+      - "{{ .Env.GPG_FINGERPRINT }}"
+      - "--output"
+      - "${signature}"
+      - "--detach-sign"
+      - "${artifact}"
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: "^feat:"
+      order: 0
+    - title: Bug Fixes
+      regexp: "^fix:"
+      order: 1
+    - title: Others
+      order: 999
+
+archives:
+  - formats: ["tar.gz"]
+    name_template: >-
+      {{ .ProjectName }}-v{{ .Version }}- {{- .Os }}- {{- if eq .Arch "amd64" }}x86_64 {{- else if eq .Arch "386" }}i386 {{-
+      else }}{{ .Arch }}{{ end }} {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: zip
+
+nfpms:
+  - id: zfs_exporter
+    package_name: zfs-exporter
+    file_name_template: "{{ .ConventionalFileName }}"
+    vendor: Donald Gifford
+    homepage: https://github.com/donaldgifford/zfs_exporter
+    maintainer: Donald Gifford <dgifford@pm.me>
+    description: |-
+      Prometheus exporter for ZFS.
+      Exposes ZFS statistics, metrics, statuses,
+      and server information in Prometheus format. Lightweight and
+      suitable for Raspberry Pi and other ARM64/AMD64 systems.
+    license: Apache-2.0
+    formats:
+      - deb
+    bindir: /usr/bin
+    section: net
+    priority: optional
+    changelog: changelog.yml
+    contents:
+      # Systemd service file (not a conffile - it's not in /etc)
+      - src: deploy/deb/systemd/zfs_exporter.service
+        dst: /lib/systemd/system/zfs_exporter.service
+      # Default environment file (conffile - preserved on upgrade)
+      - src: deploy/deb/default/zfs_exporter
+        dst: /etc/default/zfs_exporter
+        type: config|noreplace
+      # Copyright file (required by Debian policy)
+      - src: deploy/deb/copyright
+        dst: /usr/share/doc/zfs-exporter/copyright
+      # Lintian overrides (suppress expected warnings for Go binaries)
+      - src: deploy/deb/lintian-overrides
+        dst: /usr/share/lintian/overrides/zfs-exporter
+        file_info:
+          mode: 0644
+    scripts:
+      postinstall: deploy/deb/scripts/postinstall.sh
+      preremove: deploy/deb/scripts/preremove.sh
+    overrides:
+      deb:
+        dependencies:
+          - systemd
+
+release:
+  name_template: 'Release {{.Tag}}'
+  github:
+    owner: donaldgifford
+    name: zfs_exporter
+  draft: true
+  prerelease: auto
+  mode: prepend
+  header: |
+    ## Release {{ .Tag }} ({{ .Date }})
+
+    ### Installation
+
+    #### Linux/macOS (Manual)
+    ```bash
+    # Download the appropriate binary for your system
+    # Extract and move to your PATH
+    tar -xzf zfs_exporter_*.tar.gz
+    ```
+
+  footer: |
+    ---
+    **Full Changelog**: https://github.com/donaldgifford/zfs_exporter/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+snapshot:
+  version_template: "{{ .Tag }}-dev"

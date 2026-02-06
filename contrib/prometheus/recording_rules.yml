@@ -1,0 +1,21 @@
+groups:
+  - name: zfs_anomaly_baselines
+    interval: 5m
+    rules:
+      # 1-day baselines (short-term anomaly detection)
+      - record: zfs:dataset_used_bytes:avg1d
+        expr: avg_over_time(zfs_dataset_used_bytes[1d])
+
+      - record: zfs:dataset_used_bytes:stddev1d
+        expr: stddev_over_time(zfs_dataset_used_bytes[1d])
+
+      # 7-day baselines (weekly pattern anomaly detection)
+      - record: zfs:dataset_used_bytes:avg7d
+        expr: avg_over_time(zfs_dataset_used_bytes[7d])
+
+      - record: zfs:dataset_used_bytes:stddev7d
+        expr: stddev_over_time(zfs_dataset_used_bytes[7d])
+
+      # Growth rate (bytes per second, smoothed over 1 hour)
+      - record: zfs:dataset_used_bytes:deriv1h
+        expr: deriv(zfs_dataset_used_bytes[1h])
