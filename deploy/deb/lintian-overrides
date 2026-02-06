@@ -1,0 +1,4 @@
+# Go binaries are statically linked - no shared library dependencies
+zfs-exporter: statically-linked-binary
+# Go binaries are stripped via ldflags -s -w in goreleaser
+zfs-exporter: unstripped-binary-or-object

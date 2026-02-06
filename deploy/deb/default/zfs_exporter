@@ -1,0 +1,11 @@
+# Default settings for zfs_exporter
+# This file is sourced by the systemd service as an EnvironmentFile.
+# Uncomment and modify options as needed.
+
+# Command-line options passed to zfs_exporter
+ZFS_EXPORTER_OPTS=""
+
+# Examples:
+# ZFS_EXPORTER_OPTS="--web.listen-address=:9134 --log.level=info"
+# ZFS_EXPORTER_OPTS="--zfs.zpool-path=/usr/sbin/zpool --zfs.zfs-path=/usr/sbin/zfs"
+# ZFS_EXPORTER_OPTS="--host.services=zfs,nfs,smb"
