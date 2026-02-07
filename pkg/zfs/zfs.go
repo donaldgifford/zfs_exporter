@@ -14,7 +14,21 @@ import (
 // Tests: returns fixture data.
 type Runner func(ctx context.Context, name string, args ...string) ([]byte, error)
 
-// DefaultRunner returns a Runner that uses exec.CommandContext.
+// DefaultRunner returns a Runner that uses exec.CommandContext, which invokes
+// the binary directly without a shell. Each argument is passed as a separate
+// argv entry, so shell metacharacters (;, |, &, etc.) are literal values, not
+// control operators. There is no command injection vector through args.
+//
+// The binary name comes from Client.zpoolPath / Client.zfsPath, which are
+// validated at startup by config.Validate() (exec.LookPath for bare names,
+// os.Stat + executable bit check for absolute paths). All args are hardcoded
+// string literals in the Client methods (GetPools, GetDatasets,
+// GetScanStatuses) -- no user input reaches the arg list.
+//
+// INFO(security): exec.CommandContext does NOT use a shell. Args are passed
+// directly as argv to the process. No shell injection is possible through this
+// path. Binary paths are validated at startup via config.Validate(). Do not
+// wrap this in a shell (e.g. bash -c) or the security model breaks.
 func DefaultRunner() Runner {
 	return func(ctx context.Context, name string, args ...string) ([]byte, error) {
 		out, err := exec.CommandContext(ctx, name, args...).Output()

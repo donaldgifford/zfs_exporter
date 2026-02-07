@@ -217,55 +217,79 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	c.collectPoolMetrics(ch, pools)
 
 	// Fetch optional data concurrently.
+	r := c.fetchOptional(ctx)
+
+	// Dataset metrics (optional).
+	if r.dsErr != nil {
+		c.logger.Warn("Failed to get datasets", "err", r.dsErr)
+	} else {
+		c.collectDatasetMetrics(ch, r.datasets)
+	}
+
+	// Scan metrics (optional).
+	if r.scanErr != nil {
+		c.logger.Warn("Failed to get scan statuses", "err", r.scanErr)
+	} else {
+		c.collectScanMetrics(ch, r.scans)
+	}
+
+	// Service metrics (optional).
+	if r.svcErr != nil {
+		c.logger.Warn("Failed to check services", "err", r.svcErr)
+	} else {
+		c.collectServiceMetrics(ch, r.svcs)
+	}
+}
+
+// optionalResults holds the results of the three concurrent optional fetches
+// (datasets, scans, services). Each goroutine in fetchOptional writes to a
+// distinct field, and sync.WaitGroup.Wait() provides a happens-before
+// guarantee that all writes are visible before the struct is returned.
+//
+// INFO(concurrency): This struct exists to make the concurrent data flow
+// explicit. Each goroutine writes to its own field pair (e.g. datasets/dsErr).
+// No two goroutines share a field. The WaitGroup ensures all goroutines
+// complete before fetchOptional returns, so there is no race. This is
+// equivalent to using separate channels but avoids the channel machinery for
+// a fixed fan-out of three.
+type optionalResults struct {
+	datasets []zfs.Dataset
+	dsErr    error
+	scans    []zfs.ScanStatus
+	scanErr  error
+	svcs     []host.ServiceStatus
+	svcErr   error
+}
+
+// fetchOptional fetches datasets, scan statuses, and service states
+// concurrently. All three are optional -- failures are captured in the
+// result's error fields rather than aborting the scrape.
+func (c *Collector) fetchOptional(ctx context.Context) optionalResults {
 	var (
-		datasets []zfs.Dataset
-		scans    []zfs.ScanStatus
-		svcs     []host.ServiceStatus
-		dsErr    error
-		scanErr  error
-		svcErr   error
-		wg       sync.WaitGroup
+		r  optionalResults
+		wg sync.WaitGroup
 	)
 
-	wg.Add(3) //nolint:mnd // three concurrent fetches
+	wg.Add(3) //nolint:mnd // datasets, scans, and services
 
 	go func() {
 		defer wg.Done()
-		datasets, dsErr = c.client.GetDatasets(ctx)
+		r.datasets, r.dsErr = c.client.GetDatasets(ctx)
 	}()
 
 	go func() {
 		defer wg.Done()
-		scans, scanErr = c.client.GetScanStatuses(ctx)
+		r.scans, r.scanErr = c.client.GetScanStatuses(ctx)
 	}()
 
 	go func() {
 		defer wg.Done()
-		svcs, svcErr = c.svcChecker.CheckServices(ctx, c.services)
+		r.svcs, r.svcErr = c.svcChecker.CheckServices(ctx, c.services)
 	}()
 
 	wg.Wait()
 
-	// Dataset metrics (optional).
-	if dsErr != nil {
-		c.logger.Warn("Failed to get datasets", "err", dsErr)
-	} else {
-		c.collectDatasetMetrics(ch, datasets)
-	}
-
-	// Scan metrics (optional).
-	if scanErr != nil {
-		c.logger.Warn("Failed to get scan statuses", "err", scanErr)
-	} else {
-		c.collectScanMetrics(ch, scans)
-	}
-
-	// Service metrics (optional).
-	if svcErr != nil {
-		c.logger.Warn("Failed to check services", "err", svcErr)
-	} else {
-		c.collectServiceMetrics(ch, svcs)
-	}
+	return r
 }
 
 func (c *Collector) collectPoolMetrics(ch chan<- prometheus.Metric, pools []zfs.Pool) {
