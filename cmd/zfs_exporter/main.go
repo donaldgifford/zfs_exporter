@@ -39,7 +39,10 @@ func main() {
 
 	logger := setupLogger(cfg.LogLevel)
 
-	cfg.ApplyEnvironment()
+	if err := cfg.ApplyEnvironment(); err != nil {
+		logger.Error("Invalid environment variable", "err", err)
+		os.Exit(1)
+	}
 
 	if err := cfg.Validate(); err != nil {
 		logger.Error("Configuration validation failed", "err", err)
@@ -69,7 +72,7 @@ func main() {
 	// HTTP server.
 	mux := http.NewServeMux()
 	mux.Handle(cfg.MetricsPath, promhttp.Handler())
-	mux.HandleFunc("/", exporter.LandingPageHandler(cfg.MetricsPath))
+	mux.HandleFunc("/", exporter.LandingPageHandler(cfg.MetricsPath, logger))
 
 	server := &http.Server{
 		Addr:              cfg.ListenAddress,

@@ -61,7 +61,7 @@ func (c *Config) Validate() error {
 }
 
 // ApplyEnvironment applies environment variable overrides.
-func (c *Config) ApplyEnvironment() {
+func (c *Config) ApplyEnvironment() error {
 	if v := os.Getenv("ZFS_EXPORTER_LISTEN_ADDRESS"); v != "" {
 		c.ListenAddress = v
 	}
@@ -75,9 +75,12 @@ func (c *Config) ApplyEnvironment() {
 	}
 
 	if v := os.Getenv("ZFS_EXPORTER_SCRAPE_TIMEOUT"); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			c.ScrapeTimeout = d
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return fmt.Errorf("invalid ZFS_EXPORTER_SCRAPE_TIMEOUT %q: %w", v, err)
 		}
+
+		c.ScrapeTimeout = d
 	}
 
 	if v := os.Getenv("ZFS_EXPORTER_ZPOOL_PATH"); v != "" {
@@ -91,6 +94,8 @@ func (c *Config) ApplyEnvironment() {
 	if v := os.Getenv("ZFS_EXPORTER_SERVICES"); v != "" {
 		c.servicesRaw = v
 	}
+
+	return nil
 }
 
 func (c *Config) parseServices() {
