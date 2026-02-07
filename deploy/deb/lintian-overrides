@@ -2,3 +2,13 @@
 zfs-exporter: statically-linked-binary
 # Go binaries are stripped via ldflags -s -w in goreleaser
 zfs-exporter: unstripped-binary-or-object
+# We call systemctl directly in maintainer scripts (standard for non-debhelper packages)
+zfs-exporter: maintainer-script-calls-systemctl
+# adduser is Priority: important and always available on Debian systems
+zfs-exporter: maintainer-script-needs-depends-on-adduser
+# No manual page for Go CLI tool (common for Prometheus exporters)
+zfs-exporter: no-manual-page
+# License field is set by goreleaser nfpms - not a standard Debian control field
+zfs-exporter: unknown-field License
+# Changelog name follows goreleaser convention, not native Debian naming
+zfs-exporter: wrong-name-for-changelog-of-native-package

@@ -3,7 +3,7 @@ set -e
 
 # Create system user if it doesn't exist
 if ! getent passwd zfs_exporter >/dev/null 2>&1; then
-    adduser --system --group --no-create-home --shell /usr/sbin/nologin zfs_exporter
+    adduser --system --group --no-create-home --home /nonexistent --shell /usr/sbin/nologin zfs_exporter
 fi
 
 # Reload systemd and enable the service
