@@ -1,0 +1,210 @@
+groups:
+  - name: zfs_exporter
+    rules:
+      # --- Exporter health ---
+
+      - alert: ZfsExporterDown
+        expr: up{job="zfs_exporter"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ZFS exporter is down on {{ $labels.instance }}"
+
+      - alert: ZfsCommandFailure
+        expr: zfs_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ZFS commands failing on {{ $labels.instance }}"
+
+      # --- Drive failure and rebuild ---
+
+      - alert: ZfsPoolDegraded
+        expr: zfs_pool_health{state="degraded"} == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} is DEGRADED (drive failure)"
+          description: "A vdev in pool {{ $labels.pool }} has failed. Check zpool status for details."
+
+      - alert: ZfsPoolFaulted
+        expr: zfs_pool_health{state="faulted"} == 1
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} is FAULTED"
+          description: "Pool {{ $labels.pool }} has experienced too many failures and is no longer accessible."
+
+      - alert: ZfsPoolDegradedNotResilvering
+        expr: |
+          (zfs_pool_health{state="degraded"} == 1)
+            unless on(pool)
+          (zfs_pool_resilver_active == 1)
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pool {{ $labels.pool }} is degraded but NOT resilvering"
+          description: "A drive has failed in pool {{ $labels.pool }} and no resilver is in progress. Manual intervention required."
+
+      - alert: ZfsPoolResilvering
+        expr: zfs_pool_resilver_active == 1
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pool {{ $labels.pool }} resilver in progress ({{ $value | humanizePercentage }} complete)"
+          description: "A drive rebuild is underway for pool {{ $labels.pool }}."
+
+      - alert: ZfsPoolResilverStalled
+        expr: |
+          (zfs_pool_resilver_active == 1)
+            and
+          (delta(zfs_pool_scan_progress_ratio[30m]) == 0)
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Resilver stalled on pool {{ $labels.pool }}"
+          description: "Resilver progress has not advanced in 30 minutes."
+
+      # --- Pool health (catch-all for non-online states) ---
+
+      - alert: ZfsPoolNotOnline
+        expr: |
+          (zfs_pool_health{state="online"} == 0)
+            unless on(pool)
+          (zfs_pool_health{state="degraded"} == 1)
+            unless on(pool)
+          (zfs_pool_health{state="faulted"} == 1)
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} is not ONLINE"
+
+      - alert: ZfsPoolReadOnly
+        expr: zfs_pool_readonly == 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} is read-only"
+
+      # --- Capacity ---
+
+      - alert: ZfsPoolCapacityWarning
+        expr: (zfs_pool_allocated_bytes / zfs_pool_size_bytes) > 0.80
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} is {{ $value | humanizePercentage }} full"
+
+      - alert: ZfsPoolCapacityCritical
+        expr: (zfs_pool_allocated_bytes / zfs_pool_size_bytes) > 0.90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} is {{ $value | humanizePercentage }} full"
+
+      - alert: ZfsPoolFragmentationHigh
+        expr: zfs_pool_fragmentation_ratio > 0.50
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "ZFS pool {{ $labels.pool }} fragmentation is {{ $value | humanizePercentage }}"
+
+      # --- Services ---
+
+      - alert: ZfsServiceDown
+        expr: zfs_service_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.service }} is down on {{ $labels.instance }}"
+
+      - alert: ZfsNfsSharesWithoutService
+        expr: |
+          (count(zfs_dataset_share_nfs == 1) > 0)
+            and
+          (zfs_service_up{service="nfs"} == 0)
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "NFS shares configured but NFS service is down on {{ $labels.instance }}"
+
+      - alert: ZfsSmbSharesWithoutService
+        expr: |
+          (count(zfs_dataset_share_smb == 1) > 0)
+            and
+          (zfs_service_up{service="smb"} == 0)
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SMB shares configured but SMB service is down on {{ $labels.instance }}"
+
+      # --- Anomaly detection (uses recording rules) ---
+
+      - alert: ZfsDatasetAbnormalGrowth
+        expr: |
+          (
+            (zfs_dataset_used_bytes - zfs:dataset_used_bytes:avg7d)
+              > 2 * zfs:dataset_used_bytes:stddev7d
+          )
+          and
+          (
+            (zfs_dataset_used_bytes - zfs:dataset_used_bytes:avg7d)
+              > max(1073741824, 0.1 * zfs:dataset_used_bytes:avg7d)
+          )
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Dataset {{ $labels.dataset }} usage is outside normal 7-day range"
+          description: "Current usage has deviated more than 2 standard deviations from the 7-day average and exceeds the minimum threshold floor."
+
+      - alert: ZfsDatasetAbnormalGrowthShortTerm
+        expr: |
+          (
+            (zfs_dataset_used_bytes - zfs:dataset_used_bytes:avg1d)
+              > 3 * zfs:dataset_used_bytes:stddev1d
+          )
+          and
+          (
+            (zfs_dataset_used_bytes - zfs:dataset_used_bytes:avg1d)
+              > max(1073741824, 0.1 * zfs:dataset_used_bytes:avg1d)
+          )
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Dataset {{ $labels.dataset }} usage spiking beyond 1-day baseline"
+          description: "Current usage has deviated more than 3 standard deviations from the 1-day average and exceeds the minimum threshold floor."
+
+      - alert: ZfsPoolPredictedFull7d
+        expr: predict_linear(zfs_pool_free_bytes[7d], 7 * 24 * 3600) < 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pool {{ $labels.pool }} predicted to fill within 7 days"
+          description: "Based on 7-day growth trend, pool {{ $labels.pool }} will run out of space."
+
+      - alert: ZfsPoolPredictedFull1d
+        expr: predict_linear(zfs_pool_free_bytes[1d], 24 * 3600) < 0
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pool {{ $labels.pool }} predicted to fill within 24 hours"
+          description: "Based on 1-day growth trend, pool {{ $labels.pool }} will run out of space imminently."

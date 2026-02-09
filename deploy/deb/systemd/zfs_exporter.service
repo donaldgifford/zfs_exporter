@@ -1,0 +1,31 @@
+[Unit]
+Description=Prometheus ZFS Exporter
+Documentation=https://github.com/donaldgifford/zfs_exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=zfs_exporter
+Group=zfs_exporter
+EnvironmentFile=-/etc/default/zfs_exporter
+ExecStart=/usr/bin/zfs_exporter $ZFS_EXPORTER_OPTS
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ReadOnlyPaths=/
+ReadWritePaths=/proc/spl/kstat/zfs
+
+# Allow access to zpool/zfs binaries and systemctl
+ExecPaths=/usr/bin /usr/sbin /bin /sbin
+
+[Install]
+WantedBy=multi-user.target
