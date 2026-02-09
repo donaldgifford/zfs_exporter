@@ -37,7 +37,14 @@ declare -A LABEL_COLORS=(
   ["ai"]="D876E3"            # Purple - AI/ML
   ["repo"]="EDEDED"          # Gray - repo config
   ["docker"]="0DB7ED"        # Docker blue
-  ["feature"]="A2EEEF"       # Light cyan - feature
+
+  # used in git-workflow claude skill
+  ["feature"]="A2EEEF"  # Light cyan - feature
+  ["fix"]="5E2560"      # Dark Purple - fix
+  ["chore"]="D876E3"    # Bright Purple - chore
+  ["docs"]="0075CA"     # Light blue - docs
+  ["security"]="F7DB55" # Yellow - security
+  # ["bug"]="5A3F67"      # Already exists in repos
 
   # From pr-labels.yml - semver labels
   ["major"]="D73A4A"        # Red - breaking
@@ -55,7 +62,12 @@ declare -A LABEL_DESCRIPTIONS=(
   ["ai"]="AI-related changes (docs/ai/, CLAUDE.md)"
   ["repo"]="Repository configuration (linters, codecov, etc.)"
   ["docker"]="Docker-related changes (Dockerfile)"
+  # used in git-workflow claude skill
   ["feature"]="New feature or enhancement"
+  ["fix"]="Small fix not a bug or feature"
+  ["chore"]="Upkeep on repo, typically versions of dependencies"
+  ["docs"]="Documentation changes (docs/, README.md)"
+  ["security"]="Security related changes"
 
   # From pr-labels.yml
   ["major"]="Breaking changes - increment major version (x.0.0)"

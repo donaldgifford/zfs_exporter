@@ -142,6 +142,28 @@ release-local: ## Test goreleaser without publishing
 	goreleaser release --snapshot --clean --skip=publish --skip=sign
 
 
+###############
+##@ Security
+
+govulncheck: ## Run Go vulnerability check (source-level, call-graph aware)
+	@ $(MAKE) --no-print-directory log-$@
+	@govulncheck ./...
+
+trivy: ## Scan dependencies for known vulnerabilities
+	@ $(MAKE) --no-print-directory log-$@
+	@trivy fs --scanners vuln --exit-code 1 --severity HIGH,CRITICAL .
+
+syft: ## Generate SBOM for the project source
+	@ $(MAKE) --no-print-directory log-$@
+	@mkdir -p $(BUILD_DIR)
+	@syft dir:. --output spdx-json=$(BUILD_DIR)/sbom.spdx.json --output cyclonedx-json=$(BUILD_DIR)/sbom.cdx.json
+	@echo "✓ SBOMs generated in $(BUILD_DIR)/"
+
+security: govulncheck trivy ## Run all security checks
+	@ $(MAKE) --no-print-directory log-$@
+	@echo "✓ All security checks passed"
+
+
 ########################################################################
 ## Self-Documenting Makefile Help                                     ##
 ## https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html ##
