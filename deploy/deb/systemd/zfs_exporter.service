@@ -17,12 +17,16 @@ NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
-PrivateDevices=yes
+# PrivateDevices must be "no" -- zpool/zfs commands require /dev/zfs
+# to communicate with the ZFS kernel module. PrivateDevices=yes hides
+# /dev/zfs, causing zpool commands to hang indefinitely.
+PrivateDevices=no
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes
 ReadOnlyPaths=/
 ReadWritePaths=/proc/spl/kstat/zfs
+DeviceAllow=/dev/zfs rw
 
 # Allow access to zpool/zfs binaries and systemctl
 ExecPaths=/usr/bin /usr/sbin /bin /sbin
