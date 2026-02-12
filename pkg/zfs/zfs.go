@@ -4,6 +4,7 @@ package zfs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os/exec"
@@ -32,11 +33,28 @@ type Runner func(ctx context.Context, name string, args ...string) ([]byte, erro
 func DefaultRunner() Runner {
 	return func(ctx context.Context, name string, args ...string) ([]byte, error) {
 		out, err := exec.CommandContext(ctx, name, args...).Output()
-		if err != nil {
-			return nil, fmt.Errorf("command %q failed: %w", name, err)
+		if err == nil {
+			return out, nil
 		}
 
-		return out, nil
+		// Context cancellation/timeout killed the process.
+		if ctx.Err() != nil {
+			return nil, fmt.Errorf("command %q killed: %w", name, ctx.Err())
+		}
+
+		// Process exited non-zero. Return stdout (callers like ServiceChecker
+		// need it) and include stderr in the error for diagnostics.
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			stderr := string(exitErr.Stderr)
+			if stderr != "" {
+				return out, fmt.Errorf("command %q exited %d: %s", name, exitErr.ExitCode(), stderr)
+			}
+
+			return out, fmt.Errorf("command %q exited %d", name, exitErr.ExitCode())
+		}
+
+		return nil, fmt.Errorf("command %q failed: %w", name, err)
 	}
 }
 
