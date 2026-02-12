@@ -56,24 +56,28 @@ func (s *ServiceChecker) CheckServices(ctx context.Context, services map[string]
 
 // checkServiceUnits tries each candidate unit name for a service key.
 // Returns (status, true) if a unit was found, (zero, false) if none exist.
+//
+// Unit existence is determined via "systemctl show --property=LoadState <unit>".
+// A unit with LoadState=not-found does not exist. This is reliable regardless
+// of whether the unit is active, inactive, or failed -- unlike "systemctl
+// is-active" which returns "inactive" with exit code 3 for both non-existent
+// and genuinely stopped units.
 func (s *ServiceChecker) checkServiceUnits(ctx context.Context, key string, units []string) (ServiceStatus, bool) {
 	for _, unit := range units {
-		out, err := s.runner(ctx, "systemctl", "is-active", unit)
-		if err != nil {
-			// "systemctl is-active" returns non-zero for inactive/failed, which
-			// exec wraps as an error. Check if we got output anyway.
-			outStr := strings.TrimSpace(string(out))
-			if outStr == "" {
-				// No output at all likely means the unit doesn't exist. Try next.
-				s.logger.Debug("unit not found, trying next", "key", key, "unit", unit)
-				continue
-			}
-
-			// Got output (e.g. "inactive", "failed") — unit exists but isn't active.
-			return ServiceStatus{Name: key, Active: false}, true
+		if !s.unitExists(ctx, unit) {
+			s.logger.Debug("unit not found, trying next", "key", key, "unit", unit)
+			continue
 		}
 
+		// Unit exists -- check if it's active.
+		out, err := s.runner(ctx, "systemctl", "is-active", unit)
+
 		outStr := strings.TrimSpace(string(out))
+		if err != nil && outStr == "" {
+			// Command failed with no output -- treat as not active.
+			s.logger.Debug("is-active failed with no output", "key", key, "unit", unit, "err", err)
+			return ServiceStatus{Name: key, Active: false}, true
+		}
 
 		return ServiceStatus{Name: key, Active: outStr == "active"}, true
 	}
@@ -82,4 +86,17 @@ func (s *ServiceChecker) checkServiceUnits(ctx context.Context, key string, unit
 	s.logger.Debug("no unit found for service key, skipping", "key", key)
 
 	return ServiceStatus{}, false
+}
+
+// unitExists checks whether a systemd unit is loaded (i.e. exists on disk).
+// Uses "systemctl show --property=LoadState" which returns "not-found" for
+// units that don't exist, regardless of active state.
+func (s *ServiceChecker) unitExists(ctx context.Context, unit string) bool {
+	out, err := s.runner(ctx, "systemctl", "show", "--property=LoadState", unit)
+	if err != nil {
+		s.logger.Debug("systemctl show failed", "unit", unit, "err", err)
+		return false
+	}
+
+	return !strings.Contains(string(out), "not-found")
 }
