@@ -135,4 +135,4 @@ release:
     **Full Changelog**: https://github.com/donaldgifford/zfs_exporter/compare/{{ .PreviousTag }}...{{ .Tag }}
 
 snapshot:
-  version_template: "{{ .Tag }}-dev"
+  version_template: "{{ .Major }}.{{ .Minor }}.{{ .Patch }}-dev"
