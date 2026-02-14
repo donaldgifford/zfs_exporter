@@ -381,7 +381,7 @@ NFS and iSCSI produces alerts for only those services.
 2. [x] Implement anomaly panel builders (`panels/anomaly.go`)
 3. [x] Build `zfs-details.json` generator
 4. [x] Build `zfs-combined.json` generator
-5. Add `//go:generate` directive and `make dashboards` target
+5. [x] Add `//go:generate` directive and `make dashboards` target
 
 ### Phase 3: Validation
 

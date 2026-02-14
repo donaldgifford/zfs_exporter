@@ -50,7 +50,7 @@ var DefaultConfig = Config{
 		{Key: "iscsi", Label: "iSCSI", UseZvols: true},
 	},
 	Dashboards: DashboardSet{Status: true, Details: true, Combined: true},
-	OutputDir:  "contrib/grafana",
+	OutputDir:  "../../contrib/grafana",
 }
 
 // Validate checks the config for errors.

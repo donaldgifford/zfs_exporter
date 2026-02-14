@@ -26,6 +26,7 @@ make fmt                # Format with gofmt + goimports (local prefix: github.co
 make check              # Pre-commit: lint + test
 make ci                 # Full CI pipeline: lint + test + build
 make run-local          # Build and run the exporter
+make dashboards         # Regenerate Grafana dashboard JSON (go generate)
 make release-check      # Validate goreleaser config
 make release-local      # Test goreleaser without publishing
 ```
@@ -53,10 +54,15 @@ layout:
 - **`pkg/host/`** - Host service checker. Uses `systemctl is-active` to check
   systemd unit states for a configurable list of services (default: ZFS, NFS,
   SMB, iSCSI). Reuses the `Runner` type from `pkg/zfs/`.
-- **`contrib/grafana/`** - Three pre-built Grafana dashboards: Status
-  (quick-glance stat panels), Details (all graphs/tables), Combined (status
-  panels + expandable drill-down rows). Files: `zfs-status.json`,
-  `zfs-details.json`, `zfs-combined.json`
+- **`tools/dashgen/`** - Dashboard code generator (separate Go module). Uses the
+  Grafana Foundation SDK to produce dashboard JSON from a Go config struct. Run
+  via `make dashboards` or `cd tools/dashgen && go generate .`. Config in
+  `config.go`, panel builders in `panels/`, dashboard assemblers in
+  `dashboards/`.
+- **`contrib/grafana/`** - Generated Grafana dashboards: Status (quick-glance
+  stat panels), Details (all graphs/tables), Combined (status panels +
+  expandable drill-down rows). Files: `zfs-status.json`, `zfs-details.json`,
+  `zfs-combined.json`. Regenerate with `make dashboards`.
 - **`contrib/prometheus/`** - Pre-built Prometheus alert rules and recording
   rules. Alerts cover pool health, drive failure/rebuild, capacity thresholds,
   service down, share/service mismatches, and anomaly detection (dataset growth
