@@ -100,6 +100,8 @@ func buildDetailsDashboard(cfg Config) (*dashboard.DashboardBuilder, error) {
 	})
 }
 
-func buildCombinedDashboard(_ Config) (*dashboard.DashboardBuilder, error) {
-	return nil, fmt.Errorf("not yet implemented")
+func buildCombinedDashboard(cfg Config) (*dashboard.DashboardBuilder, error) {
+	return dashboards.BuildCombined(dashboards.CombinedConfig{
+		Services: toServiceConfigs(cfg.Services),
+	})
 }
