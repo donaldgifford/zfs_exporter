@@ -21,7 +21,7 @@ var DefaultServiceUnits = map[string][]string{
 	"zfs":   {"zfs-zed.service"},
 	"nfs":   {"nfs-kernel-server.service", "nfs-server.service"},
 	"smb":   {"smbd.service", "smb.service"},
-	"iscsi": {"tgt.service", "iscsitarget.service"},
+	"iscsi": {"iscsid.socket", "iscsid.service", "iscsi.service", "tgt.service", "iscsitarget.service"},
 }
 
 // ServiceChecker checks systemd service states.
