@@ -118,7 +118,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -188,7 +190,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -266,7 +270,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -351,7 +357,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -387,7 +395,7 @@
           "mappings": [
             {
               "options": {
-                "from": -1e+15,
+                "from": -1000000000000000.0,
                 "result": {
                   "color": "green",
                   "index": 0,
@@ -436,7 +444,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -514,7 +524,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -642,7 +654,9 @@
           "id": 11,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -726,7 +740,9 @@
             "namePlacement": "auto",
             "orientation": "horizontal",
             "reduceOptions": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": "",
               "values": false
             },
@@ -821,7 +837,9 @@
           "id": 13,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -935,7 +953,9 @@
             "footer": {
               "countRows": false,
               "fields": "",
-              "reducer": ["sum"],
+              "reducer": [
+                "sum"
+              ],
               "show": false
             },
             "showHeader": true,
@@ -1051,7 +1071,9 @@
             "footer": {
               "countRows": false,
               "fields": "",
-              "reducer": ["sum"],
+              "reducer": [
+                "sum"
+              ],
               "show": false
             },
             "showHeader": true,
@@ -1165,7 +1187,10 @@
           "id": 23,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "max"],
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1261,7 +1286,9 @@
             "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": "",
               "values": false
             },
@@ -1350,7 +1377,9 @@
             "footer": {
               "countRows": true,
               "fields": "",
-              "reducer": ["count"],
+              "reducer": [
+                "count"
+              ],
               "show": true
             },
             "showHeader": true
@@ -1479,7 +1508,9 @@
           "id": 33,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1506,7 +1537,8 @@
         }
       ],
       "title": "NFS",
-      "type": "row"
+      "type": "row",
+      "repeat": "svc_nfs"
     },
     {
       "collapsed": true,
@@ -1575,7 +1607,9 @@
             "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": "",
               "values": false
             },
@@ -1664,7 +1698,9 @@
             "footer": {
               "countRows": true,
               "fields": "",
-              "reducer": ["count"],
+              "reducer": [
+                "count"
+              ],
               "show": true
             },
             "showHeader": true
@@ -1793,7 +1829,9 @@
           "id": 53,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1820,7 +1858,8 @@
         }
       ],
       "title": "SMB",
-      "type": "row"
+      "type": "row",
+      "repeat": "svc_smb"
     },
     {
       "collapsed": true,
@@ -1889,7 +1928,9 @@
             "justifyMode": "auto",
             "orientation": "auto",
             "reduceOptions": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": "",
               "values": false
             },
@@ -1978,7 +2019,9 @@
             "footer": {
               "countRows": true,
               "fields": "",
-              "reducer": ["count"],
+              "reducer": [
+                "count"
+              ],
               "show": true
             },
             "showHeader": true,
@@ -2113,7 +2156,9 @@
           "id": 63,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -2140,7 +2185,8 @@
         }
       ],
       "title": "iSCSI",
-      "type": "row"
+      "type": "row",
+      "repeat": "svc_iscsi"
     },
     {
       "collapsed": true,
@@ -2218,7 +2264,10 @@
           "id": 41,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "mean"],
+              "calcs": [
+                "lastNotNull",
+                "mean"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -2342,7 +2391,9 @@
             "footer": {
               "countRows": false,
               "fields": "",
-              "reducer": ["sum"],
+              "reducer": [
+                "sum"
+              ],
               "show": false
             },
             "showHeader": true,
@@ -2502,7 +2553,9 @@
           "id": 43,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -2543,7 +2596,10 @@
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["zfs", "prometheus"],
+  "tags": [
+    "zfs",
+    "prometheus"
+  ],
   "templating": {
     "list": [
       {
@@ -2583,6 +2639,78 @@
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(zfs_service_up{service=\"nfs\"}, service)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "",
+        "multi": true,
+        "name": "svc_nfs",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(zfs_service_up{service=\"nfs\"}, service)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": true,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(zfs_service_up{service=\"smb\"}, service)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "",
+        "multi": true,
+        "name": "svc_smb",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(zfs_service_up{service=\"smb\"}, service)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": true,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(zfs_service_up{service=\"iscsi\"}, service)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "",
+        "multi": true,
+        "name": "svc_iscsi",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(zfs_service_up{service=\"iscsi\"}, service)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": true,
+        "sort": 0,
         "type": "query"
       }
     ]
