@@ -176,6 +176,9 @@ func TestCheckServices_MultipleServices(t *testing.T) {
 		"zfs-zed.service":           {loadState: "loaded", isActive: "active"},
 		"nfs-kernel-server.service": {loadState: "loaded", isActive: "inactive", isActErr: errors.New("exit 3")},
 		"smbd.service":              {loadState: "loaded", isActive: "active"},
+		"iscsid.socket":             {loadState: "not-found"},
+		"iscsid.service":            {loadState: "not-found"},
+		"iscsi.service":             {loadState: "not-found"},
 		"tgt.service":               {loadState: "not-found"},
 		"iscsitarget.service":       {loadState: "not-found"},
 	})
@@ -220,6 +223,38 @@ func TestCheckServices_MultipleServices(t *testing.T) {
 		if !found {
 			t.Errorf("service %q not found in results", tc.name)
 		}
+	}
+}
+
+func TestCheckServices_SocketActivation(t *testing.T) {
+	// democratic-csi iSCSI setups use iscsid.socket (socket activation).
+	// The .service units exist but are inactive; the .socket is active.
+	runner := mockRunner(map[string]unitResponse{
+		"iscsid.socket":       {loadState: "loaded", isActive: "active"},
+		"iscsid.service":      {loadState: "loaded", isActive: "inactive", isActErr: errors.New("exit status 3")},
+		"iscsi.service":       {loadState: "loaded", isActive: "inactive", isActErr: errors.New("exit status 3")},
+		"tgt.service":         {loadState: "not-found"},
+		"iscsitarget.service": {loadState: "not-found"},
+	})
+
+	checker := NewServiceChecker(runner, testLogger())
+	statuses, err := checker.CheckServices(context.Background(), map[string][]string{
+		"iscsi": {"iscsid.socket", "iscsid.service", "iscsi.service", "tgt.service", "iscsitarget.service"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(statuses) != 1 {
+		t.Fatalf("expected 1 status, got %d", len(statuses))
+	}
+
+	if !statuses[0].Active {
+		t.Error("expected iscsi to be active via iscsid.socket")
+	}
+
+	if statuses[0].Name != "iscsi" {
+		t.Errorf("expected service name %q, got %q", "iscsi", statuses[0].Name)
 	}
 }
 

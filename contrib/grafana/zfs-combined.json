@@ -118,7 +118,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -188,7 +190,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -266,7 +270,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -351,7 +357,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -387,7 +395,7 @@
           "mappings": [
             {
               "options": {
-                "from": -1e+15,
+                "from": -1000000000000000.0,
                 "result": {
                   "color": "green",
                   "index": 0,
@@ -436,7 +444,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -514,7 +524,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -642,7 +654,9 @@
           "id": 11,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -726,7 +740,9 @@
             "namePlacement": "auto",
             "orientation": "horizontal",
             "reduceOptions": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": "",
               "values": false
             },
@@ -821,7 +837,9 @@
           "id": 13,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -935,7 +953,9 @@
             "footer": {
               "countRows": false,
               "fields": "",
-              "reducer": ["sum"],
+              "reducer": [
+                "sum"
+              ],
               "show": false
             },
             "showHeader": true,
@@ -1051,7 +1071,9 @@
             "footer": {
               "countRows": false,
               "fields": "",
-              "reducer": ["sum"],
+              "reducer": [
+                "sum"
+              ],
               "show": false
             },
             "showHeader": true,
@@ -1165,7 +1187,10 @@
           "id": 23,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "max"],
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1204,6 +1229,86 @@
       },
       "id": 30,
       "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "1 = NFS service is running, 0 = NFS service is down.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "DOWN"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 0,
+                      "text": "UP"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 0,
+            "y": 7
+          },
+          "id": 31,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "zfs_service_up{service=\"nfs\"}",
+              "legendFormat": "NFS",
+              "refId": "A"
+            }
+          ],
+          "title": "NFS Service",
+          "type": "stat"
+        },
         {
           "datasource": {
             "type": "prometheus",
@@ -1262,17 +1367,19 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 8,
-            "x": 0,
+            "w": 10,
+            "x": 4,
             "y": 7
           },
-          "id": 31,
+          "id": 32,
           "options": {
             "cellHeight": "sm",
             "footer": {
               "countRows": true,
               "fields": "",
-              "reducer": ["count"],
+              "reducer": [
+                "count"
+              ],
               "show": true
             },
             "showHeader": true
@@ -1291,7 +1398,7 @@
               "refId": "A"
             }
           ],
-          "title": "NFS Shares",
+          "title": "NFS Shared Datasets",
           "transformations": [
             {
               "id": "organize",
@@ -1313,6 +1420,215 @@
             }
           ],
           "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "NFS service up/down status over time. 1 = running, 0 = down.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 30,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "stepAfter",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "Down"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 0,
+                      "text": "Up"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "max": 1.2,
+              "min": -0.2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 14,
+            "y": 7
+          },
+          "id": 33,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "zfs_service_up{service=\"nfs\"}",
+              "legendFormat": "NFS",
+              "refId": "A"
+            }
+          ],
+          "title": "NFS Service Timeline",
+          "type": "timeseries"
+        }
+      ],
+      "title": "NFS",
+      "type": "row",
+      "repeat": "svc_nfs"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 50,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "1 = SMB service is running, 0 = SMB service is down.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "DOWN"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 0,
+                      "text": "UP"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 0,
+            "y": 8
+          },
+          "id": 51,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "zfs_service_up{service=\"smb\"}",
+              "legendFormat": "SMB",
+              "refId": "A"
+            }
+          ],
+          "title": "SMB Service",
+          "type": "stat"
         },
         {
           "datasource": {
@@ -1372,17 +1688,19 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 8,
-            "x": 8,
-            "y": 7
+            "w": 10,
+            "x": 4,
+            "y": 8
           },
-          "id": 32,
+          "id": 52,
           "options": {
             "cellHeight": "sm",
             "footer": {
               "countRows": true,
               "fields": "",
-              "reducer": ["count"],
+              "reducer": [
+                "count"
+              ],
               "show": true
             },
             "showHeader": true
@@ -1401,7 +1719,7 @@
               "refId": "A"
             }
           ],
-          "title": "SMB Shares",
+          "title": "SMB Shared Datasets",
           "transformations": [
             {
               "id": "organize",
@@ -1429,7 +1747,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Service up/down status over time. 1 = running, 0 = down.",
+          "description": "SMB service up/down status over time. 1 = running, 0 = down.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1473,12 +1791,12 @@
                     "0": {
                       "color": "red",
                       "index": 1,
-                      "text": "DOWN"
+                      "text": "Down"
                     },
                     "1": {
                       "color": "green",
                       "index": 0,
-                      "text": "UP"
+                      "text": "Up"
                     }
                   },
                   "type": "value"
@@ -1504,14 +1822,16 @@
           },
           "gridPos": {
             "h": 8,
-            "w": 8,
-            "x": 16,
-            "y": 7
+            "w": 10,
+            "x": 14,
+            "y": 8
           },
-          "id": 33,
+          "id": 53,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1528,17 +1848,18 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "zfs_service_up",
-              "legendFormat": "{{service}}",
+              "expr": "zfs_service_up{service=\"smb\"}",
+              "legendFormat": "SMB",
               "refId": "A"
             }
           ],
-          "title": "Service Status Timeline",
+          "title": "SMB Service Timeline",
           "type": "timeseries"
         }
       ],
-      "title": "Shares & Services",
-      "type": "row"
+      "title": "SMB",
+      "type": "row",
+      "repeat": "svc_smb"
     },
     {
       "collapsed": true,
@@ -1546,7 +1867,334 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 8
+      },
+      "id": 60,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "1 = iSCSI service is running, 0 = iSCSI service is down.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "DOWN"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 0,
+                      "text": "UP"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 0,
+            "y": 9
+          },
+          "id": 61,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "zfs_service_up{service=\"iscsi\"}",
+              "legendFormat": "iSCSI",
+              "refId": "A"
+            }
+          ],
+          "title": "iSCSI Service",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "ZFS volumes (zvols) that may be used as iSCSI targets, sorted by used space.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Time"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "bytes"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 4,
+            "y": 9
+          },
+          "id": 62,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": true,
+              "fields": "",
+              "reducer": [
+                "count"
+              ],
+              "show": true
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Value"
+              }
+            ]
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "zfs_dataset_used_bytes{type=\"volume\", pool=~\"$pool\"}",
+              "format": "table",
+              "instant": true,
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "title": "iSCSI Volumes (zvols)",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "instance": true,
+                  "job": true,
+                  "type": true
+                },
+                "indexByName": {},
+                "renameByName": {
+                  "Value": "Used",
+                  "dataset": "Dataset",
+                  "pool": "Pool"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "iSCSI service up/down status over time. 1 = running, 0 = down.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 30,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "stepAfter",
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "Down"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 0,
+                      "text": "Up"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "max": 1.2,
+              "min": -0.2,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 14,
+            "y": 9
+          },
+          "id": 63,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "10.0.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "zfs_service_up{service=\"iscsi\"}",
+              "legendFormat": "iSCSI",
+              "refId": "A"
+            }
+          ],
+          "title": "iSCSI Service Timeline",
+          "type": "timeseries"
+        }
+      ],
+      "title": "iSCSI",
+      "type": "row",
+      "repeat": "svc_iscsi"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
       },
       "id": 40,
       "panels": [
@@ -1616,7 +2264,10 @@
           "id": 41,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "mean"],
+              "calcs": [
+                "lastNotNull",
+                "mean"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1740,7 +2391,9 @@
             "footer": {
               "countRows": false,
               "fields": "",
-              "reducer": ["sum"],
+              "reducer": [
+                "sum"
+              ],
               "show": false
             },
             "showHeader": true,
@@ -1900,7 +2553,9 @@
           "id": 43,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1941,7 +2596,10 @@
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["zfs", "prometheus"],
+  "tags": [
+    "zfs",
+    "prometheus"
+  ],
   "templating": {
     "list": [
       {
@@ -1981,6 +2639,78 @@
         "regex": "",
         "skipUrlSync": false,
         "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(zfs_service_up{service=\"nfs\"}, service)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "",
+        "multi": true,
+        "name": "svc_nfs",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(zfs_service_up{service=\"nfs\"}, service)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": true,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(zfs_service_up{service=\"smb\"}, service)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "",
+        "multi": true,
+        "name": "svc_smb",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(zfs_service_up{service=\"smb\"}, service)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": true,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(zfs_service_up{service=\"iscsi\"}, service)",
+        "hide": 2,
+        "includeAll": false,
+        "label": "",
+        "multi": true,
+        "name": "svc_iscsi",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(zfs_service_up{service=\"iscsi\"}, service)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": true,
+        "sort": 0,
         "type": "query"
       }
     ]

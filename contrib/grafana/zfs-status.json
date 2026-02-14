@@ -484,7 +484,7 @@
         "type": "prometheus",
         "uid": "${datasource}"
       },
-      "description": "Detects when NFS or SMB shares are configured on datasets but the corresponding service is down. Red = mismatch detected, Green = no mismatch.",
+      "description": "NFS shares exist but NFS service is down",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -493,11 +493,17 @@
           "mappings": [
             {
               "options": {
-                "0": {
+                "match": "null+nan",
+                "result": {
                   "color": "green",
                   "index": 0,
                   "text": "OK"
-                },
+                }
+              },
+              "type": "special"
+            },
+            {
+              "options": {
                 "1": {
                   "color": "red",
                   "index": 1,
@@ -526,7 +532,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
+        "w": 4,
         "x": 8,
         "y": 6
       },
@@ -554,20 +560,99 @@
             "uid": "${datasource}"
           },
           "expr": "(count(zfs_dataset_share_nfs == 1) > 0) and (zfs_service_up{service=\"nfs\"} == 0)",
-          "legendFormat": "NFS shares without service",
+          "legendFormat": "",
           "refId": "A"
+        }
+      ],
+      "title": "NFS Share Mismatch",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "SMB shares exist but SMB service is down",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "OK"
+                }
+              },
+              "type": "special"
+            },
+            {
+              "options": {
+                "1": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "MISMATCH"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
         },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 6
+      },
+      "id": 8,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
           "expr": "(count(zfs_dataset_share_smb == 1) > 0) and (zfs_service_up{service=\"smb\"} == 0)",
-          "legendFormat": "SMB shares without service",
-          "refId": "B"
+          "legendFormat": "",
+          "refId": "A"
         }
       ],
-      "title": "Share/Service Mismatch",
+      "title": "SMB Share Mismatch",
       "type": "stat"
     },
     {
