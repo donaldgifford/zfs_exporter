@@ -373,12 +373,12 @@ NFS and iSCSI produces alerts for only those services.
 5. [x] Implement pool panel builders (`panels/pool.go`)
 6. [x] Implement dataset panel builders (`panels/dataset.go`)
 7. [x] Build `zfs-status.json` generator as proof of concept
-8. Validate output imports cleanly in Grafana 12
+8. [x] Validate output imports cleanly in Grafana 12
 
 ### Phase 2: Service panels and remaining dashboards
 
-1. Implement service panel builders (`panels/service.go`)
-2. Implement anomaly panel builders (`panels/anomaly.go`)
+1. [x] Implement service panel builders (`panels/service.go`)
+2. [x] Implement anomaly panel builders (`panels/anomaly.go`)
 3. Build `zfs-details.json` generator
 4. Build `zfs-combined.json` generator
 5. Add `//go:generate` directive and `make dashboards` target
