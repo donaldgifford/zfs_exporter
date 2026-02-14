@@ -271,17 +271,109 @@ produces NFS, SMB, or iSCSI panels depending on the config. The `ShareTable`
 function switches between a share-dataset query (`zfs_dataset_share_nfs == 1`)
 and a zvol query (`zfs_dataset_used_bytes{type="volume"}`) based on `UseZvols`.
 
+## Validation and Linting
+
+Code generation gives us a natural place to validate dashboards that's impossible
+with hand-edited JSON. The tool validates at two levels:
+
+### Build-time (Go compiler)
+
+The Foundation SDK's typed builders catch structural errors at compile time:
+- Wrong type passed to a threshold (string vs float)
+- Invalid enum value for color mode, orientation, etc.
+- Missing required fields (builder won't compile without them)
+
+### Generate-time (runtime checks in dashgen)
+
+The tool runs validation after building each dashboard and before writing JSON:
+
+**PromQL validation** -- Parse every expression with
+`github.com/prometheus/prometheus/promql/parser` to catch syntax errors (typos,
+unmatched braces, invalid function names) before they reach Grafana. This is
+the single biggest win -- currently a bad PromQL expression silently shows
+"No data" in Grafana with no indication of why.
+
+**Metric cross-referencing** -- Maintain a registry of known metric names
+exported by the collector (derived from the `prometheus.NewDesc` calls in
+`collector/collector.go`). Warn if a panel references a metric that doesn't
+exist. Catches renames and typos.
+
+**Panel structure checks:**
+- Unique panel IDs across the dashboard
+- No overlapping grid positions
+- All datasource variable references (`${datasource}`) resolve to a declared
+  variable
+- Rows with inner panels have `collapsed: true` (Grafana quirk -- panels inside
+  expanded rows don't render correctly)
+
+**Config validation:**
+- Each service has a non-empty `Key` and `Label`
+- Each service sets exactly one of `ShareMetric` or `UseZvols`
+- No duplicate service keys
+
+### CI integration
+
+Add a `make lint-dashboards` target that runs `go generate` and then validates
+the output:
+
+```makefile
+lint-dashboards:  ## Validate generated dashboard JSON
+    go run ./tools/dashgen --validate
+```
+
+The `--validate` flag generates dashboards in memory, runs all checks, and
+reports errors without writing files. CI runs this alongside `golangci-lint`
+to catch dashboard regressions.
+
+## Prometheus Rules Generation
+
+The same config that drives dashboard generation also drives Prometheus rules.
+Service-specific rules (share/service mismatch alerts) are only generated for
+services in the config. Recording rules for anomaly detection baselines stay
+in sync with the dashboard panels that consume them.
+
+### What gets generated
+
+**Recording rules** (`contrib/prometheus/recording_rules.yml`):
+- `zfs:dataset_used_bytes:avg1d` -- 1-day average per dataset
+- `zfs:dataset_used_bytes:avg7d` -- 7-day average per dataset
+- `zfs:dataset_used_bytes:stddev7d` -- 7-day standard deviation per dataset
+
+**Alert rules** (`contrib/prometheus/alert_rules.yml`):
+- Pool health alerts (degraded, faulted)
+- Pool capacity alerts (80%, 90% thresholds)
+- Resilver/scrub active alerts
+- Per-service: service down alerts (only for configured services)
+- Per-service: share/service mismatch (only for services with `ShareMetric`)
+- Anomaly detection: dataset growth outside normal range
+- Pool fill prediction: days until full below threshold
+
+### Rules builder
+
+A `rules/` package alongside `panels/` and `dashboards/`:
+
+```
+tools/dashgen/
+  rules/
+    recording.go    # generates recording rules YAML
+    alerts.go       # generates alert rules YAML
+```
+
+Rules use the same `Config` and `ServiceConfig` structs, so a config with only
+NFS and iSCSI produces alerts for only those services.
+
 ## Implementation Plan
 
 ### Phase 1: Scaffold and core panels
 
-1. Add `github.com/grafana/grafana-foundation-sdk/go` dependency
-2. Create `tools/dashgen/` directory structure
-3. Implement `Config` struct and defaults
-4. Implement pool panel builders (`panels/pool.go`)
-5. Implement dataset panel builders (`panels/dataset.go`)
-6. Build `zfs-status.json` generator as proof of concept
-7. Validate output matches current JSON (diff test)
+1. Create `tools/dashgen/` with its own `go.mod` (separate module)
+2. Add `github.com/grafana/grafana-foundation-sdk/go` dependency
+3. Implement `Config` struct, defaults, and validation
+4. Implement shared helpers (`panels/helpers.go`)
+5. Implement pool panel builders (`panels/pool.go`)
+6. Implement dataset panel builders (`panels/dataset.go`)
+7. Build `zfs-status.json` generator as proof of concept
+8. Validate output imports cleanly in Grafana 12
 
 ### Phase 2: Service panels and remaining dashboards
 
@@ -289,24 +381,30 @@ and a zvol query (`zfs_dataset_used_bytes{type="volume"}`) based on `UseZvols`.
 2. Implement anomaly panel builders (`panels/anomaly.go`)
 3. Build `zfs-details.json` generator
 4. Build `zfs-combined.json` generator
-5. Add `//go:generate` directive
-6. Add `make dashboards` target
+5. Add `//go:generate` directive and `make dashboards` target
 
-### Phase 3: Testing and validation
+### Phase 3: Validation
 
-1. Add a test that generates all dashboards and validates JSON structure
-2. Add a test that checks generated output matches committed files (staleness
-   check)
-3. Remove the hidden `svc_nfs/svc_smb/svc_iscsi` template variable workaround
-   from generated dashboards (no longer needed -- panels simply aren't generated
-   for unconfigured services)
-4. Validate dashboards import cleanly in Grafana
+1. Add PromQL syntax validation (`promql/parser`)
+2. Add metric cross-reference registry
+3. Add panel structure checks (unique IDs, grid overlaps, datasource refs)
+4. Add `--validate` flag for CI
+5. Add `make lint-dashboards` target
 
-### Phase 4: CI integration
+### Phase 4: Prometheus rules generation
 
-1. Add CI step that runs `go generate` and checks for uncommitted changes
-   (ensures generated files stay in sync with generator code)
-2. Update CLAUDE.md and README with dashboard generation instructions
+1. Implement recording rules builder (`rules/recording.go`)
+2. Implement alert rules builder (`rules/alerts.go`)
+3. Generate rules from the same config as dashboards
+4. Add rules output to `contrib/prometheus/`
+
+### Phase 5: Testing and CI
+
+1. Add tests that generate all dashboards and validate JSON structure
+2. Add staleness check (generated output matches committed files)
+3. Add CI step: `go generate` + diff check
+4. Add CI step: `make lint-dashboards`
+5. Update CLAUDE.md and README with dashboard generation instructions
 
 ## Future: CLI Scaffolding (kubebuilder pattern)
 
@@ -341,8 +439,6 @@ extract into a standalone repo later.
 
 Key decisions deferred to v2:
 - Config file format (YAML with `gopkg.in/yaml.v3`, or stick with Go)
-- Whether to generate Prometheus recording rules and alert rules from the same
-  config
 - Plugin system for custom panel types beyond the built-in set
 - Whether the CLI binary gets distributed independently (homebrew, go install)
 
@@ -350,6 +446,7 @@ Key decisions deferred to v2:
 
 New files:
 - `generate.go` (go:generate directive)
+- `tools/dashgen/go.mod` (separate module)
 - `tools/dashgen/main.go`
 - `tools/dashgen/config.go`
 - `tools/dashgen/panels/pool.go`
@@ -361,28 +458,26 @@ New files:
 - `tools/dashgen/dashboards/status.go`
 - `tools/dashgen/dashboards/details.go`
 - `tools/dashgen/dashboards/combined.go`
+- `tools/dashgen/rules/recording.go`
+- `tools/dashgen/rules/alerts.go`
+- `tools/dashgen/validate/validate.go`
 
 Modified files:
-- `go.mod` / `go.sum` (new dependency: grafana-foundation-sdk)
-- `Makefile` (new `dashboards` target)
+- `Makefile` (new `dashboards` and `lint-dashboards` targets)
 - `contrib/grafana/*.json` (regenerated output)
+- `contrib/prometheus/*.yml` (regenerated output)
 
-## Open Questions
+## Resolved Questions
 
-1. **Grafana version targeting:** The SDK v0.0.7 targets Grafana >= 12.0. Our
-   dashboards currently declare `schemaVersion: 39` and `pluginVersion: 10.0.0`.
-   Need to verify the SDK output is compatible with Grafana 10.x+ or if we need
-   an older SDK branch.
+1. **Grafana version targeting:** Running Grafana v12.1.0. SDK v0.0.7 targets
+   Grafana >= 12.0, so we're compatible. The hand-maintained dashboards declared
+   older schema versions; the generated output will use the SDK's native schema.
 
-2. **Recording rules:** Should the generator also produce the Prometheus
-   recording rules in `contrib/prometheus/`? They reference the same metric
-   names and could stay in sync.
+2. **Recording rules:** Yes -- generated from the same config as dashboards.
 
-3. **Alert rules:** Same question for alert rules -- they reference the same
-   metrics and services. Service-specific alerts (e.g. NFS share mismatch)
-   could be conditionally generated from the same config.
+3. **Alert rules:** Yes -- service-specific alerts are conditionally generated
+   based on the services in the config.
 
-4. **Separate Go module:** Should `tools/dashgen/` have its own `go.mod` from
-   the start to keep the Foundation SDK dependency out of the main exporter
-   module? This would also make it easier to extract into a standalone repo
-   later.
+4. **Separate Go module:** Yes -- `tools/dashgen/` gets its own `go.mod` to
+   keep the Foundation SDK and PromQL parser dependencies out of the main
+   exporter module. Also makes extraction to a standalone repo easier later.
