@@ -19,18 +19,54 @@ type discardWriter struct{}
 
 func (*discardWriter) Write(p []byte) (int, error) { return len(p), nil }
 
-func TestCheckServices_ActiveService(t *testing.T) {
-	runner := func(_ context.Context, _ string, _ ...string) ([]byte, error) {
-		return []byte("active\n"), nil
+// unitResponse describes what a mock runner returns for a given systemctl call.
+type unitResponse struct {
+	loadState string // value for "systemctl show --property=LoadState" (e.g. "loaded", "not-found")
+	isActive  string // value for "systemctl is-active" (e.g. "active", "inactive", "failed")
+	isActErr  error  // error returned by "systemctl is-active" (non-nil for inactive/failed)
+}
+
+// mockRunner creates a Runner that dispatches by unit name. It handles both
+// "systemctl show --property=LoadState <unit>" and "systemctl is-active <unit>".
+func mockRunner(responses map[string]unitResponse) zfs.Runner {
+	return func(_ context.Context, name string, args ...string) ([]byte, error) {
+		if name != "systemctl" || len(args) == 0 {
+			return nil, errors.New("unexpected command")
+		}
+
+		// "systemctl show --property=LoadState <unit>"
+		if args[0] == "show" {
+			unit := args[len(args)-1]
+			if r, ok := responses[unit]; ok {
+				return []byte("LoadState=" + r.loadState + "\n"), nil
+			}
+
+			return []byte("LoadState=not-found\n"), nil
+		}
+
+		// "systemctl is-active <unit>"
+		if args[0] == "is-active" {
+			unit := args[len(args)-1]
+			if r, ok := responses[unit]; ok {
+				return []byte(r.isActive + "\n"), r.isActErr
+			}
+
+			return []byte("inactive\n"), errors.New("exit status 3")
+		}
+
+		return nil, errors.New("unknown systemctl subcommand")
 	}
+}
+
+func TestCheckServices_ActiveService(t *testing.T) {
+	runner := mockRunner(map[string]unitResponse{
+		"nfs-kernel-server.service": {loadState: "loaded", isActive: "active"},
+	})
 
 	checker := NewServiceChecker(runner, testLogger())
-
-	services := map[string][]string{
+	statuses, err := checker.CheckServices(context.Background(), map[string][]string{
 		"nfs": {"nfs-kernel-server.service"},
-	}
-
-	statuses, err := checker.CheckServices(context.Background(), services)
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -49,17 +85,14 @@ func TestCheckServices_ActiveService(t *testing.T) {
 }
 
 func TestCheckServices_InactiveService(t *testing.T) {
-	runner := func(_ context.Context, _ string, _ ...string) ([]byte, error) {
-		return []byte("inactive\n"), errors.New("exit status 3")
-	}
+	runner := mockRunner(map[string]unitResponse{
+		"smbd.service": {loadState: "loaded", isActive: "inactive", isActErr: errors.New("exit status 3")},
+	})
 
 	checker := NewServiceChecker(runner, testLogger())
-
-	services := map[string][]string{
+	statuses, err := checker.CheckServices(context.Background(), map[string][]string{
 		"smb": {"smbd.service"},
-	}
-
-	statuses, err := checker.CheckServices(context.Background(), services)
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -74,17 +107,14 @@ func TestCheckServices_InactiveService(t *testing.T) {
 }
 
 func TestCheckServices_FailedService(t *testing.T) {
-	runner := func(_ context.Context, _ string, _ ...string) ([]byte, error) {
-		return []byte("failed\n"), errors.New("exit status 3")
-	}
+	runner := mockRunner(map[string]unitResponse{
+		"zfs-zed.service": {loadState: "loaded", isActive: "failed", isActErr: errors.New("exit status 3")},
+	})
 
 	checker := NewServiceChecker(runner, testLogger())
-
-	services := map[string][]string{
+	statuses, err := checker.CheckServices(context.Background(), map[string][]string{
 		"zfs": {"zfs-zed.service"},
-	}
-
-	statuses, err := checker.CheckServices(context.Background(), services)
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -99,23 +129,16 @@ func TestCheckServices_FailedService(t *testing.T) {
 }
 
 func TestCheckServices_UnitNotFound_TriesFallback(t *testing.T) {
-	runner := func(_ context.Context, _ string, args ...string) ([]byte, error) {
-		// Simulate: first unit doesn't exist (no output), second is active.
-		unit := args[len(args)-1]
-		if unit == "nfs-kernel-server.service" {
-			return []byte(""), errors.New("unit not found")
-		}
-
-		return []byte("active\n"), nil
-	}
+	runner := mockRunner(map[string]unitResponse{
+		// First unit doesn't exist, second is active.
+		"nfs-kernel-server.service": {loadState: "not-found"},
+		"nfs-server.service":        {loadState: "loaded", isActive: "active"},
+	})
 
 	checker := NewServiceChecker(runner, testLogger())
-
-	services := map[string][]string{
+	statuses, err := checker.CheckServices(context.Background(), map[string][]string{
 		"nfs": {"nfs-kernel-server.service", "nfs-server.service"},
-	}
-
-	statuses, err := checker.CheckServices(context.Background(), services)
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -130,17 +153,15 @@ func TestCheckServices_UnitNotFound_TriesFallback(t *testing.T) {
 }
 
 func TestCheckServices_NoUnitsExist(t *testing.T) {
-	runner := func(_ context.Context, _ string, _ ...string) ([]byte, error) {
-		return []byte(""), errors.New("unit not found")
-	}
+	runner := mockRunner(map[string]unitResponse{
+		"tgt.service":         {loadState: "not-found"},
+		"iscsitarget.service": {loadState: "not-found"},
+	})
 
 	checker := NewServiceChecker(runner, testLogger())
-
-	services := map[string][]string{
+	statuses, err := checker.CheckServices(context.Background(), map[string][]string{
 		"iscsi": {"tgt.service", "iscsitarget.service"},
-	}
-
-	statuses, err := checker.CheckServices(context.Background(), services)
+	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -151,28 +172,15 @@ func TestCheckServices_NoUnitsExist(t *testing.T) {
 }
 
 func TestCheckServices_MultipleServices(t *testing.T) {
-	responses := map[string]struct {
-		output string
-		err    error
-	}{
-		"zfs-zed.service":           {"active\n", nil},
-		"nfs-kernel-server.service": {"inactive\n", errors.New("exit 3")},
-		"smbd.service":              {"active\n", nil},
-		"tgt.service":               {"", errors.New("unit not found")},
-		"iscsitarget.service":       {"", errors.New("unit not found")},
-	}
+	runner := mockRunner(map[string]unitResponse{
+		"zfs-zed.service":           {loadState: "loaded", isActive: "active"},
+		"nfs-kernel-server.service": {loadState: "loaded", isActive: "inactive", isActErr: errors.New("exit 3")},
+		"smbd.service":              {loadState: "loaded", isActive: "active"},
+		"tgt.service":               {loadState: "not-found"},
+		"iscsitarget.service":       {loadState: "not-found"},
+	})
 
-	runner := func(_ context.Context, _ string, args ...string) ([]byte, error) {
-		unit := args[len(args)-1]
-		if r, ok := responses[unit]; ok {
-			return []byte(r.output), r.err
-		}
-
-		return []byte(""), errors.New("unknown unit")
-	}
-
-	checker := NewServiceChecker(zfs.Runner(runner), testLogger())
-
+	checker := NewServiceChecker(runner, testLogger())
 	statuses, err := checker.CheckServices(context.Background(), DefaultServiceUnits)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -191,7 +199,6 @@ func TestCheckServices_MultipleServices(t *testing.T) {
 		return statuses[i].Name < statuses[j].Name
 	})
 
-	// Verify each service status.
 	for _, tc := range []struct {
 		name   string
 		active bool
@@ -209,6 +216,7 @@ func TestCheckServices_MultipleServices(t *testing.T) {
 				}
 			}
 		}
+
 		if !found {
 			t.Errorf("service %q not found in results", tc.name)
 		}
@@ -216,32 +224,35 @@ func TestCheckServices_MultipleServices(t *testing.T) {
 }
 
 func TestCheckServices_RunnerUsesSystemctl(t *testing.T) {
-	var capturedName string
-	var capturedArgs []string
+	var calls []string
 
 	runner := func(_ context.Context, name string, args ...string) ([]byte, error) {
-		capturedName = name
-		capturedArgs = args
+		calls = append(calls, name+" "+strings.Join(args, " "))
+
+		if args[0] == "show" {
+			return []byte("LoadState=loaded\n"), nil
+		}
 
 		return []byte("active\n"), nil
 	}
 
 	checker := NewServiceChecker(runner, testLogger())
 
-	services := map[string][]string{
+	_, _ = checker.CheckServices(context.Background(), map[string][]string{
 		"test": {"test.service"},
+	})
+
+	if len(calls) != 2 {
+		t.Fatalf("expected 2 systemctl calls, got %d: %v", len(calls), calls)
 	}
 
-	_, _ = checker.CheckServices(context.Background(), services)
-
-	if capturedName != "systemctl" {
-		t.Errorf("expected command %q, got %q", "systemctl", capturedName)
+	expectedShow := "systemctl show --property=LoadState test.service"
+	if calls[0] != expectedShow {
+		t.Errorf("first call = %q, want %q", calls[0], expectedShow)
 	}
 
-	expectedArgs := "is-active test.service"
-	gotArgs := strings.Join(capturedArgs, " ")
-
-	if gotArgs != expectedArgs {
-		t.Errorf("expected args %q, got %q", expectedArgs, gotArgs)
+	expectedIsActive := "systemctl is-active test.service"
+	if calls[1] != expectedIsActive {
+		t.Errorf("second call = %q, want %q", calls[1], expectedIsActive)
 	}
 }
