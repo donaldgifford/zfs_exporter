@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -13,17 +14,17 @@ import (
 
 	"github.com/donaldgifford/zfs_exporter/tools/dashgen/dashboards"
 	"github.com/donaldgifford/zfs_exporter/tools/dashgen/panels"
+	"github.com/donaldgifford/zfs_exporter/tools/dashgen/validate"
 )
 
 func main() {
+	validateOnly := flag.Bool("validate", false, "validate dashboards without writing files")
+	flag.Parse()
+
 	cfg := DefaultConfig
 
 	if err := cfg.Validate(); err != nil {
 		log.Fatalf("config validation failed:\n%v", err)
-	}
-
-	if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
-		log.Fatalf("creating output directory: %v", err)
 	}
 
 	type dashEntry struct {
@@ -45,6 +46,8 @@ func main() {
 		entries = append(entries, dashEntry{"zfs-combined.json", buildCombinedDashboard})
 	}
 
+	hasErrors := false
+
 	for _, e := range entries {
 		builder, err := e.builder(cfg)
 		if err != nil {
@@ -54,6 +57,24 @@ func main() {
 		dash, err := builder.Build()
 		if err != nil {
 			log.Fatalf("finalizing %s: %v", e.filename, err)
+		}
+
+		// Run validation on every dashboard.
+		result := validate.Dashboard(dash)
+		output := validate.FormatResult(e.filename, result)
+		if output != "" {
+			fmt.Print(output)
+		}
+		if !result.Ok() {
+			hasErrors = true
+		}
+
+		if *validateOnly {
+			continue
+		}
+
+		if err := os.MkdirAll(cfg.OutputDir, 0o755); err != nil {
+			log.Fatalf("creating output directory: %v", err)
 		}
 
 		data, err := json.MarshalIndent(dash, "", "  ")
@@ -70,6 +91,10 @@ func main() {
 		}
 
 		fmt.Printf("wrote %s\n", path)
+	}
+
+	if hasErrors {
+		os.Exit(1)
 	}
 }
 

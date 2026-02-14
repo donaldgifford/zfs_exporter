@@ -27,6 +27,7 @@ make check              # Pre-commit: lint + test
 make ci                 # Full CI pipeline: lint + test + build
 make run-local          # Build and run the exporter
 make dashboards         # Regenerate Grafana dashboard JSON (go generate)
+make lint-dashboards    # Validate dashboard PromQL, metrics, and panel structure
 make release-check      # Validate goreleaser config
 make release-local      # Test goreleaser without publishing
 ```

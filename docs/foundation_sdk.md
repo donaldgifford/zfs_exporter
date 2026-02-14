@@ -385,11 +385,11 @@ NFS and iSCSI produces alerts for only those services.
 
 ### Phase 3: Validation
 
-1. Add PromQL syntax validation (`promql/parser`)
-2. Add metric cross-reference registry
-3. Add panel structure checks (unique IDs, grid overlaps, datasource refs)
-4. Add `--validate` flag for CI
-5. Add `make lint-dashboards` target
+1. [x] Add PromQL syntax validation (`promql/parser`)
+2. [x] Add metric cross-reference registry
+3. [x] Add panel structure checks (unique IDs, grid overlaps, datasource refs)
+4. [x] Add `--validate` flag for CI
+5. [x] Add `make lint-dashboards` target
 
 ### Phase 4: Prometheus rules generation
 
