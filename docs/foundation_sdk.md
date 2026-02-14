@@ -17,14 +17,19 @@ with Grafana template variables and row repeat, but the approach is fragile:
 
 Build a Go tool in `tools/dashgen/` that uses the
 [Grafana Foundation SDK](https://github.com/grafana/grafana-foundation-sdk) to
-produce dashboard JSON from a YAML config file. The tool reads a `dashgen.yaml`
-that declares which services to include, then generates only the panels and rows
-for those services. Run it via `go generate` or directly as a standalone binary.
+produce dashboard JSON from a Go config struct. The config declares which
+services to include, and the tool generates only the panels and rows for those
+services. Run via `go generate`.
+
+This is the **v1 approach**: config lives in Go, `go generate` produces JSON,
+generated files are committed. Fast to build and test. See the
+[Future: CLI Scaffolding](#future-cli-scaffolding-kubebuilder-pattern) section
+for the planned evolution into a kubebuilder-style CLI tool.
 
 ```
 tools/dashgen/
-  main.go           # entrypoint: reads YAML, calls builders, writes JSON
-  config.go         # Config struct, YAML parsing, validation
+  main.go           # entrypoint: reads config, calls builders, writes JSON
+  config.go         # Config struct, defaults, validation
   panels/           # reusable panel builder functions
     pool.go         # pool health, capacity, fragmentation panels
     dataset.go      # dataset usage, available space panels
@@ -36,7 +41,6 @@ tools/dashgen/
     status.go       # builds zfs-status.json
     details.go      # builds zfs-details.json
     combined.go     # builds zfs-combined.json
-dashgen.yaml        # default config (repo root, committed)
 ```
 
 ## Grafana Foundation SDK
@@ -81,120 +85,93 @@ json.MarshalIndent(dash, "", "  ")
 
 ## Configuration
 
-A YAML file (`dashgen.yaml`) defines which services and dashboard sections to
-generate. The tool reads this at runtime, validates it, and reports clear errors
-for any problems. No recompilation needed to change the config.
-
-```yaml
-# dashgen.yaml -- dashboard generation config
-# Only services listed here get panels in the generated dashboards.
-
-output_dir: contrib/grafana
-
-dashboards:
-  status: true    # zfs-status.json  (NOC screen, stat panels only)
-  details: true   # zfs-details.json (expanded rows, full drill-down)
-  combined: true  # zfs-combined.json (status + collapsed drill-down)
-
-services:
-  - key: nfs
-    label: NFS
-    share_metric: zfs_dataset_share_nfs
-
-  - key: smb
-    label: SMB
-    share_metric: zfs_dataset_share_smb
-
-  - key: iscsi
-    label: iSCSI
-    use_zvols: true
-```
-
-The Go structs that back this are straightforward:
+The config is a Go struct in `tools/dashgen/config.go`. For now, changing
+services means editing this struct and running `go generate`. This is the
+fastest path to a working tool.
 
 ```go
 type Config struct {
-    OutputDir  string         `yaml:"output_dir"`
-    Dashboards DashboardSet   `yaml:"dashboards"`
-    Services   []ServiceConfig `yaml:"services"`
-}
+    // Services to include in dashboards. Each entry generates service-specific
+    // panels (status stat, detail table, timeline). Only listed services appear.
+    Services []ServiceConfig
 
-type DashboardSet struct {
-    Status   bool `yaml:"status"`
-    Details  bool `yaml:"details"`
-    Combined bool `yaml:"combined"`
+    // Dashboards to generate. Defaults to all three.
+    Dashboards DashboardSet
+
+    // OutputDir is the directory to write JSON files.
+    OutputDir string
 }
 
 type ServiceConfig struct {
-    Key         string `yaml:"key"`
-    Label       string `yaml:"label"`
-    ShareMetric string `yaml:"share_metric"`
-    UseZvols    bool   `yaml:"use_zvols"`
+    // Key is the service identifier used in metrics (e.g. "nfs", "smb", "iscsi").
+    Key string
+
+    // Label is the display name in dashboard panels (e.g. "NFS", "SMB", "iSCSI").
+    Label string
+
+    // ShareMetric is the metric name for share detection.
+    // For NFS: "zfs_dataset_share_nfs", for SMB: "zfs_dataset_share_smb".
+    // Empty string means no share metric (e.g. iSCSI uses zvols instead).
+    ShareMetric string
+
+    // UseZvols indicates this service should show zvol inventory instead of
+    // share datasets (true for iSCSI).
+    UseZvols bool
+}
+
+type DashboardSet struct {
+    Status   bool // zfs-status.json
+    Details  bool // zfs-details.json
+    Combined bool // zfs-combined.json
 }
 ```
 
-Validation happens at runtime with clear errors:
+Default config matches current behavior (all services, all dashboards):
 
-```
-$ go run ./tools/dashgen --config dashgen.yaml
-dashgen: error: service[0]: "key" is required
-dashgen: error: service "nfs": must set either "share_metric" or "use_zvols"
-```
-
-A user who only runs NFS and iSCSI simply removes the SMB entry:
-
-```yaml
-services:
-  - key: nfs
-    label: NFS
-    share_metric: zfs_dataset_share_nfs
-  - key: iscsi
-    label: iSCSI
-    use_zvols: true
+```go
+var DefaultConfig = Config{
+    Services: []ServiceConfig{
+        {Key: "nfs", Label: "NFS", ShareMetric: "zfs_dataset_share_nfs"},
+        {Key: "smb", Label: "SMB", ShareMetric: "zfs_dataset_share_smb"},
+        {Key: "iscsi", Label: "iSCSI", UseZvols: true},
+    },
+    Dashboards: DashboardSet{Status: true, Details: true, Combined: true},
+    OutputDir:  "contrib/grafana",
+}
 ```
 
-The generated dashboards have no SMB panels at all -- no hidden rows, no empty
-panels, no "No data" messages. This also makes the tool portable: if it
-eventually becomes its own project, the YAML config is the natural interface.
+A user who only runs NFS and iSCSI edits the config:
 
-### Default Config
-
-The repo ships a `dashgen.yaml` at the root with all services enabled. This is
-the config `go generate` uses to produce the committed dashboard JSON. Users
-clone the repo and get working dashboards without running the tool.
-
-For custom deployments, copy `dashgen.yaml`, edit it, and run the tool:
-
-```bash
-go run ./tools/dashgen --config my-dashgen.yaml --output /path/to/grafana/dashboards
+```go
+var DefaultConfig = Config{
+    Services: []ServiceConfig{
+        {Key: "nfs", Label: "NFS", ShareMetric: "zfs_dataset_share_nfs"},
+        {Key: "iscsi", Label: "iSCSI", UseZvols: true},
+    },
+    // ...
+}
 ```
+
+Then runs `go generate ./...`. The generated dashboards have no SMB panels at
+all -- no hidden rows, no empty panels, no "No data" messages.
 
 ## go:generate Integration
 
 Add a generate directive in a top-level file (e.g. `generate.go`):
 
 ```go
-//go:generate go run ./tools/dashgen --config dashgen.yaml
+//go:generate go run ./tools/dashgen
 ```
 
-Running `go generate ./...` reads `dashgen.yaml` from the repo root and
-rebuilds all dashboard JSON files. The generated files are committed so users
-get working dashboards out of the box with the default config.
+Running `go generate ./...` rebuilds all dashboard JSON files using the config
+in `tools/dashgen/config.go`. The generated files are committed to the repo so
+users get working dashboards out of the box with the default config.
 
 The Makefile gets a new target:
 
 ```makefile
 dashboards:  ## Regenerate Grafana dashboard JSON
     go generate ./generate.go
-```
-
-For custom deployments, users copy `dashgen.yaml`, edit it, and run the tool
-directly without `go generate`:
-
-```bash
-cp dashgen.yaml my-dashgen.yaml
-# edit my-dashgen.yaml to remove SMB, add custom services, etc.
-go run ./tools/dashgen --config my-dashgen.yaml --output /my/grafana/dashboards
 ```
 
 ## Panel Inventory (What Gets Generated)
@@ -234,7 +211,7 @@ Status panels at top, collapsed drill-down rows:
 | Top Stats | Pool Health, Capacity %, Service Status, Resilver/Scrub, Days Until Full, Exporter Up |
 | Pool Details (collapsed) | Usage Over Time, Usage Bars, Fragmentation |
 | Dataset Details (collapsed) | Top Datasets, Available Space, Usage Over Time |
-| Per-service (collapsed, repeated) | Service Stat, Share/Zvol Table, Service Timeline |
+| Per-service (collapsed) | Service Stat, Share/Zvol Table, Service Timeline |
 | Anomaly Detection (collapsed) | Growth Rate, 7d Deviation, Pool Fill Prediction |
 
 ## Unique Metrics Referenced
@@ -294,34 +271,6 @@ produces NFS, SMB, or iSCSI panels depending on the config. The `ShareTable`
 function switches between a share-dataset query (`zfs_dataset_share_nfs == 1`)
 and a zvol query (`zfs_dataset_used_bytes{type="volume"}`) based on `UseZvols`.
 
-## CLI Interface
-
-The tool accepts a config file path and optional output directory override:
-
-```bash
-# Default: reads dashgen.yaml from current directory
-go run ./tools/dashgen
-
-# Explicit config and output
-go run ./tools/dashgen --config dashgen.yaml --output contrib/grafana
-
-# Override output dir (useful for deploying to a Grafana provisioning path)
-go run ./tools/dashgen --config dashgen.yaml --output /etc/grafana/dashboards
-```
-
-Flags:
-- `--config` (`-c`): Path to YAML config file (default: `dashgen.yaml`)
-- `--output` (`-o`): Override `output_dir` from config (optional)
-
-### YAML Dependency
-
-YAML parsing requires a dependency. Options:
-- `gopkg.in/yaml.v3` -- standard, widely used, no transitive deps
-- `github.com/goccy/go-yaml` -- faster, fewer allocations
-
-Recommend `gopkg.in/yaml.v3` since it's the de facto standard and this is a
-build-time tool where parse speed doesn't matter.
-
 ## Implementation Plan
 
 ### Phase 1: Scaffold and core panels
@@ -359,10 +308,47 @@ build-time tool where parse speed doesn't matter.
    (ensures generated files stay in sync with generator code)
 2. Update CLAUDE.md and README with dashboard generation instructions
 
+## Future: CLI Scaffolding (kubebuilder pattern)
+
+The v1 approach (Go struct config + `go generate`) gets us a working tool fast.
+The next evolution follows the kubebuilder pattern:
+
+1. **`dashgen init`** -- scaffolds out a project structure with a default config
+   file and a `generate.go` directive, similar to `kubebuilder init` creating a
+   project skeleton
+
+2. **`dashgen add service <key>`** -- adds a new service entry to the config
+   with sensible defaults, similar to `kubebuilder create api` adding a new
+   resource type
+
+3. **`make dashboards`** / **`go generate`** -- reads the scaffolded config and
+   generates dashboard JSON, same as `make generate` in kubebuilder running
+   controller-gen on the annotated types
+
+The progression:
+
+```
+v1 (now):     edit Go struct  -->  go generate  -->  dashboard JSON
+v2 (future):  dashgen init    -->  edit config  -->  go generate  -->  dashboard JSON
+              dashgen add svc
+```
+
+In v2, the config file format (YAML, JSON, or even annotated Go) becomes the
+natural interface. The CLI handles scaffolding and validation, `go generate`
+does the actual codegen. The tool could live in its own module
+(`tools/dashgen/go.mod`) to keep dependencies separate, making it easy to
+extract into a standalone repo later.
+
+Key decisions deferred to v2:
+- Config file format (YAML with `gopkg.in/yaml.v3`, or stick with Go)
+- Whether to generate Prometheus recording rules and alert rules from the same
+  config
+- Plugin system for custom panel types beyond the built-in set
+- Whether the CLI binary gets distributed independently (homebrew, go install)
+
 ## File Changes Summary
 
 New files:
-- `dashgen.yaml` (default config, repo root)
 - `generate.go` (go:generate directive)
 - `tools/dashgen/main.go`
 - `tools/dashgen/config.go`
@@ -377,7 +363,7 @@ New files:
 - `tools/dashgen/dashboards/combined.go`
 
 Modified files:
-- `go.mod` / `go.sum` (new dependencies: grafana-foundation-sdk, yaml.v3)
+- `go.mod` / `go.sum` (new dependency: grafana-foundation-sdk)
 - `Makefile` (new `dashboards` target)
 - `contrib/grafana/*.json` (regenerated output)
 
@@ -390,17 +376,13 @@ Modified files:
 
 2. **Recording rules:** Should the generator also produce the Prometheus
    recording rules in `contrib/prometheus/`? They reference the same metric
-   names and could stay in sync with the YAML config.
+   names and could stay in sync.
 
 3. **Alert rules:** Same question for alert rules -- they reference the same
    metrics and services. Service-specific alerts (e.g. NFS share mismatch)
    could be conditionally generated from the same config.
 
-4. **Custom services:** The `ServiceConfig` struct already supports arbitrary
-   services via YAML. Should we document how to add a custom service, or keep
-   it to the well-known set (nfs, smb, iscsi)?
-
-5. **Standalone tool:** If this becomes its own repo/binary, the YAML config
-   is already the right interface. Should we structure `tools/dashgen/` as its
-   own Go module from the start (`tools/dashgen/go.mod`) to keep its
-   dependencies separate from the exporter?
+4. **Separate Go module:** Should `tools/dashgen/` have its own `go.mod` from
+   the start to keep the Foundation SDK dependency out of the main exporter
+   module? This would also make it easier to extract into a standalone repo
+   later.
