@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 )
 
 // ServiceConfig defines a service whose panels appear in generated dashboards.
@@ -51,6 +52,12 @@ var DefaultConfig = Config{
 	},
 	Dashboards: DashboardSet{Status: true, Details: true, Combined: true},
 	OutputDir:  "../../contrib/grafana",
+}
+
+// RulesDir returns the Prometheus rules output directory, derived from
+// OutputDir by replacing the last path component with "prometheus".
+func (c *Config) RulesDir() string {
+	return filepath.Join(filepath.Dir(c.OutputDir), "prometheus")
 }
 
 // Validate checks the config for errors.

@@ -1,5 +1,5 @@
-// dashgen generates Grafana dashboard JSON files from a Go config struct
-// using the Grafana Foundation SDK. Run via go generate.
+// dashgen generates Grafana dashboard JSON files and Prometheus rules YAML from
+// a Go config struct using the Grafana Foundation SDK. Run via go generate.
 package main
 
 import (
@@ -11,9 +11,11 @@ import (
 	"path/filepath"
 
 	"github.com/grafana/grafana-foundation-sdk/go/dashboard"
+	"gopkg.in/yaml.v3"
 
 	"github.com/donaldgifford/zfs_exporter/tools/dashgen/dashboards"
 	"github.com/donaldgifford/zfs_exporter/tools/dashgen/panels"
+	"github.com/donaldgifford/zfs_exporter/tools/dashgen/rules"
 	"github.com/donaldgifford/zfs_exporter/tools/dashgen/validate"
 )
 
@@ -93,9 +95,44 @@ func main() {
 		fmt.Printf("wrote %s\n", path)
 	}
 
+	// Generate Prometheus rules (skip in validate-only mode).
+	if !*validateOnly {
+		generateRules(cfg)
+	}
+
 	if hasErrors {
 		os.Exit(1)
 	}
+}
+
+func generateRules(cfg Config) {
+	rulesDir := filepath.Join(cfg.RulesDir())
+
+	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
+		log.Fatalf("creating rules directory: %v", err)
+	}
+
+	svcConfigs := toRulesServiceConfigs(cfg.Services)
+
+	// Recording rules.
+	writeYAML(rulesDir, "recording_rules.yml", rules.RecordingRules())
+
+	// Alert rules.
+	writeYAML(rulesDir, "alerts.yml", rules.AlertRules(svcConfigs))
+}
+
+func writeYAML(dir, filename string, v any) {
+	data, err := yaml.Marshal(v)
+	if err != nil {
+		log.Fatalf("marshaling %s: %v", filename, err)
+	}
+
+	path := filepath.Join(dir, filename)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		log.Fatalf("writing %s: %v", path, err)
+	}
+
+	fmt.Printf("wrote %s\n", path)
 }
 
 // toServiceConfigs converts the main config's ServiceConfig slice to the
@@ -108,6 +145,20 @@ func toServiceConfigs(svcs []ServiceConfig) []panels.ServiceConfig {
 			Label:       s.Label,
 			ShareMetric: s.ShareMetric,
 			UseZvols:    s.UseZvols,
+		}
+	}
+	return out
+}
+
+// toRulesServiceConfigs converts the main config's ServiceConfig slice to the
+// rules package's ServiceConfig type.
+func toRulesServiceConfigs(svcs []ServiceConfig) []rules.ServiceConfig {
+	out := make([]rules.ServiceConfig, len(svcs))
+	for i, s := range svcs {
+		out[i] = rules.ServiceConfig{
+			Key:         s.Key,
+			Label:       s.Label,
+			ShareMetric: s.ShareMetric,
 		}
 	}
 	return out

@@ -393,10 +393,10 @@ NFS and iSCSI produces alerts for only those services.
 
 ### Phase 4: Prometheus rules generation
 
-1. Implement recording rules builder (`rules/recording.go`)
-2. Implement alert rules builder (`rules/alerts.go`)
-3. Generate rules from the same config as dashboards
-4. Add rules output to `contrib/prometheus/`
+1. [x] Implement recording rules builder (`rules/recording.go`)
+2. [x] Implement alert rules builder (`rules/alerts.go`)
+3. [x] Generate rules from the same config as dashboards
+4. [x] Add rules output to `contrib/prometheus/`
 
 ### Phase 5: Testing and CI
 
