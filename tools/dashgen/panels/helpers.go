@@ -106,3 +106,49 @@ func PoolFilter() string {
 func ServiceFilter(serviceKey string) string {
 	return `service="` + serviceKey + `"`
 }
+
+// ValueMapOnOff returns a value mapping for 0/1 binary metrics with custom
+// labels and colors.
+func ValueMapOnOff(zeroText, zeroColor, oneText, oneColor string) dashboard.ValueMapping {
+	return dashboard.ValueMapping{
+		ValueMap: &dashboard.ValueMap{
+			Type: dashboard.MappingTypeValueToText,
+			Options: map[string]dashboard.ValueMappingResult{
+				"0": {Text: cog.ToPtr(zeroText), Color: cog.ToPtr(zeroColor), Index: cog.ToPtr[int32](1)},
+				"1": {Text: cog.ToPtr(oneText), Color: cog.ToPtr(oneColor), Index: cog.ToPtr[int32](0)},
+			},
+		},
+	}
+}
+
+// RangeMapping returns a range-type value mapping.
+func RangeMapping(from, to *float64, text, color string, index int32) dashboard.ValueMapping {
+	return dashboard.ValueMapping{
+		RangeMap: &dashboard.RangeMap{
+			Type: dashboard.MappingTypeRangeToText,
+			Options: dashboard.DashboardRangeMapOptions{
+				From:   from,
+				To:     to,
+				Result: dashboard.ValueMappingResult{Text: cog.ToPtr(text), Color: cog.ToPtr(color), Index: cog.ToPtr(index)},
+			},
+		},
+	}
+}
+
+// TableLegend returns a VizLegendOptions builder configured for a table legend
+// at the bottom with the specified calculation columns.
+func TableLegend(calcs ...string) *common.VizLegendOptionsBuilder {
+	return common.NewVizLegendOptionsBuilder().
+		DisplayMode(common.LegendDisplayModeTable).
+		Placement(common.LegendPlacementBottom).
+		ShowLegend(true).
+		Calcs(calcs)
+}
+
+// MultiTooltip returns a VizTooltipOptions builder with multi-series tooltip
+// sorted descending.
+func MultiTooltip() *common.VizTooltipOptionsBuilder {
+	return common.NewVizTooltipOptionsBuilder().
+		Mode(common.TooltipDisplayModeMulti).
+		Sort(common.SortOrderDescending)
+}
