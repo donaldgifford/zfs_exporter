@@ -366,10 +366,10 @@ NFS and iSCSI produces alerts for only those services.
 
 ### Phase 1: Scaffold and core panels
 
-1. Create `tools/dashgen/` with its own `go.mod` (separate module)
-2. Add `github.com/grafana/grafana-foundation-sdk/go` dependency
-3. Implement `Config` struct, defaults, and validation
-4. Implement shared helpers (`panels/helpers.go`)
+1. [x] Create `tools/dashgen/` with its own `go.mod` (separate module)
+2. [x] Add `github.com/grafana/grafana-foundation-sdk/go` dependency
+3. [x] Implement `Config` struct, defaults, and validation
+4. [x] Implement shared helpers (`panels/helpers.go`)
 5. Implement pool panel builders (`panels/pool.go`)
 6. Implement dataset panel builders (`panels/dataset.go`)
 7. Build `zfs-status.json` generator as proof of concept
