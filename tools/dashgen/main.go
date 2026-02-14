@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 
 	"github.com/grafana/grafana-foundation-sdk/go/dashboard"
+
+	"github.com/donaldgifford/zfs_exporter/tools/dashgen/dashboards"
+	"github.com/donaldgifford/zfs_exporter/tools/dashgen/panels"
 )
 
 func main() {
@@ -70,10 +73,25 @@ func main() {
 	}
 }
 
-// Placeholder builders — implemented in dashboards/ package files.
+// toServiceConfigs converts the main config's ServiceConfig slice to the
+// panels package's ServiceConfig type.
+func toServiceConfigs(svcs []ServiceConfig) []panels.ServiceConfig {
+	out := make([]panels.ServiceConfig, len(svcs))
+	for i, s := range svcs {
+		out[i] = panels.ServiceConfig{
+			Key:         s.Key,
+			Label:       s.Label,
+			ShareMetric: s.ShareMetric,
+			UseZvols:    s.UseZvols,
+		}
+	}
+	return out
+}
 
-func buildStatusDashboard(_ Config) (*dashboard.DashboardBuilder, error) {
-	return nil, fmt.Errorf("not yet implemented")
+func buildStatusDashboard(cfg Config) (*dashboard.DashboardBuilder, error) {
+	return dashboards.BuildStatus(dashboards.StatusConfig{
+		Services: toServiceConfigs(cfg.Services),
+	})
 }
 
 func buildDetailsDashboard(_ Config) (*dashboard.DashboardBuilder, error) {
