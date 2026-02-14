@@ -26,8 +26,10 @@ make fmt                # Format with gofmt + goimports (local prefix: github.co
 make check              # Pre-commit: lint + test
 make ci                 # Full CI pipeline: lint + test + build
 make run-local          # Build and run the exporter
-make dashboards         # Regenerate Grafana dashboard JSON (go generate)
+make dashboards         # Regenerate Grafana dashboard JSON and Prometheus rules
 make lint-dashboards    # Validate dashboard PromQL, metrics, and panel structure
+# Dashboard generator tests (separate module):
+# cd tools/dashgen && go test -race ./...
 make release-check      # Validate goreleaser config
 make release-local      # Test goreleaser without publishing
 ```

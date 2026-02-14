@@ -36,6 +36,28 @@ jobs:
         with:
           version: v2.8.0
 
+  dashboards:
+    name: Dashboard Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: tools/dashgen/go.mod
+
+      - name: Validate dashboards
+        run: make lint-dashboards
+
+      - name: Test dashgen
+        run: cd tools/dashgen && go test -race ./...
+
+      - name: Check staleness
+        run: |
+          make dashboards
+          git diff --exit-code contrib/ || (echo "Dashboard output is stale. Run 'make dashboards' and commit." && exit 1)
+
   test-go:
     name: Test Go
     runs-on: ubuntu-latest

@@ -400,11 +400,11 @@ NFS and iSCSI produces alerts for only those services.
 
 ### Phase 5: Testing and CI
 
-1. Add tests that generate all dashboards and validate JSON structure
-2. Add staleness check (generated output matches committed files)
-3. Add CI step: `go generate` + diff check
-4. Add CI step: `make lint-dashboards`
-5. Update CLAUDE.md and README with dashboard generation instructions
+1. [x] Add tests that generate all dashboards and validate JSON structure
+2. [x] Add staleness check (generated output matches committed files)
+3. [x] Add CI step: `go generate` + diff check
+4. [x] Add CI step: `make lint-dashboards`
+5. [x] Update CLAUDE.md and README with dashboard generation instructions
 
 ## Future: CLI Scaffolding (kubebuilder pattern)
 
