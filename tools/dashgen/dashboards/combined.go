@@ -26,28 +26,28 @@ func BuildCombined(cfg CombinedConfig) (*dashboard.DashboardBuilder, error) {
 	b = b.WithVariable(datasourceVar()).
 		WithVariable(poolVar())
 
-	// Top stat panels (no row header).
-	b = b.WithPanel(panels.PoolHealth()).
-		WithPanel(panels.PoolCapacity()).
-		WithPanel(panels.ServiceStatusAll()).
-		WithPanel(panels.ResilverScrub()).
-		WithPanel(panels.DaysUntilFull()).
-		WithPanel(panels.ExporterUp())
+	// Top stat panels (no row header): 6 across at w:4, h:4.
+	b = b.WithPanel(panels.PoolHealth().Height(4).Span(4)).
+		WithPanel(panels.PoolCapacity().Height(4).Span(4)).
+		WithPanel(panels.ServiceStatusAll().Height(4).Span(4)).
+		WithPanel(panels.ResilverScrub().Height(4).Span(4)).
+		WithPanel(panels.DaysUntilFull().Height(4).Span(4)).
+		WithPanel(panels.ExporterUp().Height(4).Span(4))
 
 	// Pool Details (collapsed row).
 	b = b.WithRow(
 		dashboard.NewRowBuilder("Pool Details").
 			WithPanel(panels.PoolUsageOverTime()).
 			WithPanel(panels.PoolUsageBars()).
-			WithPanel(panels.Fragmentation()),
+			WithPanel(panels.Fragmentation().Span(6)),
 	)
 
 	// Dataset Details (collapsed row).
 	b = b.WithRow(
 		dashboard.NewRowBuilder("Dataset Details").
-			WithPanel(panels.TopDatasets()).
-			WithPanel(panels.AvailableSpace()).
-			WithPanel(panels.DatasetUsageOverTime()),
+			WithPanel(panels.TopDatasets().Height(8).Span(12)).
+			WithPanel(panels.AvailableSpace().Height(8).Span(12)).
+			WithPanel(panels.DatasetUsageOverTime().Height(8).Span(24)),
 	)
 
 	// Per-service rows (collapsed).
@@ -58,9 +58,9 @@ func BuildCombined(cfg CombinedConfig) (*dashboard.DashboardBuilder, error) {
 	// Anomaly Detection (collapsed row).
 	b = b.WithRow(
 		dashboard.NewRowBuilder("Anomaly Detection").
-			WithPanel(panels.GrowthRate()).
-			WithPanel(panels.DeviationTable()).
-			WithPanel(panels.PoolFillPrediction()),
+			WithPanel(panels.GrowthRate().Height(8).Span(12)).
+			WithPanel(panels.DeviationTable().Height(8).Span(12)).
+			WithPanel(panels.PoolFillPrediction().Height(8).Span(24)),
 	)
 
 	return b, nil

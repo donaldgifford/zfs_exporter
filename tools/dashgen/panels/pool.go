@@ -11,11 +11,25 @@ import (
 	"github.com/grafana/grafana-foundation-sdk/go/timeseries"
 )
 
+// Default grid sizes for pool panels.
+const (
+	poolStatWidth      = 6
+	poolStatHeight     = 4
+	poolTSWidth        = 12
+	poolTSHeight       = 8
+	poolBarGaugeWidth  = 6
+	poolBarGaugeHeight = 8
+	poolFragWidth      = 8
+	poolFragHeight     = 8
+)
+
 // PoolHealth returns a stat panel showing whether pools are ONLINE.
-func PoolHealth() cog.Builder[dashboard.Panel] {
+func PoolHealth() *stat.PanelBuilder {
 	return stat.NewPanelBuilder().
 		Title("Pool Health").
 		Description("Pool online/offline status. Shows ONLINE when the health metric equals 1.").
+		Height(poolStatHeight).
+		Span(poolStatWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`zfs_pool_health{state="online", %s}`, PoolFilter()),
@@ -31,10 +45,12 @@ func PoolHealth() cog.Builder[dashboard.Panel] {
 }
 
 // PoolCapacity returns a stat panel showing pool capacity as a percentage.
-func PoolCapacity() cog.Builder[dashboard.Panel] {
+func PoolCapacity() *stat.PanelBuilder {
 	return stat.NewPanelBuilder().
 		Title("Pool Capacity").
 		Description("Allocated bytes as a fraction of total pool size.").
+		Height(poolStatHeight).
+		Span(poolStatWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`zfs_pool_allocated_bytes{%s} / zfs_pool_size_bytes{%s}`, PoolFilter(), PoolFilter()),
@@ -51,10 +67,12 @@ func PoolCapacity() cog.Builder[dashboard.Panel] {
 }
 
 // ResilverScrub returns a stat panel showing resilver/scrub activity.
-func ResilverScrub() cog.Builder[dashboard.Panel] {
+func ResilverScrub() *stat.PanelBuilder {
 	return stat.NewPanelBuilder().
 		Title("Resilver/Scrub Status").
 		Description("Active resilver or scrub operations. IDLE when no operations are running.").
+		Height(poolStatHeight).
+		Span(poolStatWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`zfs_pool_resilver_active{%s}`, PoolFilter()),
@@ -81,13 +99,15 @@ func ResilverScrub() cog.Builder[dashboard.Panel] {
 }
 
 // DaysUntilFull returns a stat panel showing estimated days until pool fills.
-func DaysUntilFull() cog.Builder[dashboard.Panel] {
+func DaysUntilFull() *stat.PanelBuilder {
 	return stat.NewPanelBuilder().
 		Title("Pool Days Until Full").
-		Description("Estimated days until pool reaches full capacity based on 7-day linear trend extrapolated to 30 days. Higher is better.").
+		Description("Estimated days until pool reaches full capacity based on 7-day linear trend. Negative values (pool shrinking) display as 'Not filling'. Higher is better.").
+		Height(poolStatHeight).
+		Span(poolStatWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
-			fmt.Sprintf(`predict_linear(zfs_pool_free_bytes{%s}[7d], 30*24*3600) / zfs_pool_free_bytes{%s}`, PoolFilter(), PoolFilter()),
+			fmt.Sprintf(`zfs_pool_free_bytes{%s} / (-deriv(zfs_pool_free_bytes{%s}[7d])) / 86400`, PoolFilter(), PoolFilter()),
 			"{{ pool }}", "A",
 		)).
 		Unit("d").
@@ -110,10 +130,12 @@ func DaysUntilFull() cog.Builder[dashboard.Panel] {
 }
 
 // PoolUsageOverTime returns a timeseries panel showing allocated and free bytes.
-func PoolUsageOverTime() cog.Builder[dashboard.Panel] {
+func PoolUsageOverTime() *timeseries.PanelBuilder {
 	return timeseries.NewPanelBuilder().
 		Title("Pool Usage Over Time").
 		Description("Pool allocated and free bytes over time.").
+		Height(poolTSHeight).
+		Span(poolTSWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`zfs_pool_allocated_bytes{%s}`, PoolFilter()),
@@ -135,10 +157,12 @@ func PoolUsageOverTime() cog.Builder[dashboard.Panel] {
 }
 
 // PoolUsageBars returns a bar gauge showing pool usage percentage per pool.
-func PoolUsageBars() cog.Builder[dashboard.Panel] {
+func PoolUsageBars() *bargauge.PanelBuilder {
 	return bargauge.NewPanelBuilder().
 		Title("Pool Usage % (Allocated / Total)").
 		Description("Current allocated bytes compared to total pool size.").
+		Height(poolBarGaugeHeight).
+		Span(poolBarGaugeWidth).
 		Datasource(DSRef()).
 		WithTarget(
 			PromInstantQuery(
@@ -170,10 +194,12 @@ func PoolUsageBars() cog.Builder[dashboard.Panel] {
 }
 
 // Fragmentation returns a timeseries panel showing pool fragmentation over time.
-func Fragmentation() cog.Builder[dashboard.Panel] {
+func Fragmentation() *timeseries.PanelBuilder {
 	return timeseries.NewPanelBuilder().
 		Title("Fragmentation Over Time").
 		Description("Pool fragmentation ratio over time. High fragmentation can degrade performance.").
+		Height(poolFragHeight).
+		Span(poolFragWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`zfs_pool_fragmentation_ratio{%s}`, PoolFilter()),

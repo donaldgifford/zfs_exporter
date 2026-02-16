@@ -106,7 +106,7 @@ func main() {
 }
 
 func generateRules(cfg Config) {
-	rulesDir := filepath.Join(cfg.RulesDir())
+	rulesDir := cfg.RulesDir()
 
 	if err := os.MkdirAll(rulesDir, 0o755); err != nil {
 		log.Fatalf("creating rules directory: %v", err)
@@ -114,11 +114,9 @@ func generateRules(cfg Config) {
 
 	svcConfigs := toRulesServiceConfigs(cfg.Services)
 
-	// Recording rules.
-	writeYAML(rulesDir, "recording_rules.yml", rules.RecordingRules())
-
-	// Alert rules.
-	writeYAML(rulesDir, "alerts.yml", rules.AlertRules(svcConfigs))
+	// PrometheusRule CRs for Kubernetes deployment.
+	writeYAML(rulesDir, "zfs-recording-rules.yaml", rules.RecordingPrometheusRule())
+	writeYAML(rulesDir, "zfs-alerts.yaml", rules.AlertPrometheusRule(svcConfigs))
 }
 
 func writeYAML(dir, filename string, v any) {
@@ -126,6 +124,9 @@ func writeYAML(dir, filename string, v any) {
 	if err != nil {
 		log.Fatalf("marshaling %s: %v", filename, err)
 	}
+
+	// Prepend YAML document separator for Kubernetes manifests.
+	data = append([]byte("---\n"), data...)
 
 	path := filepath.Join(dir, filename)
 	if err := os.WriteFile(path, data, 0o644); err != nil {

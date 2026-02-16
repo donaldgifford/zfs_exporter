@@ -10,11 +10,21 @@ import (
 	"github.com/grafana/grafana-foundation-sdk/go/timeseries"
 )
 
+// Default grid sizes for anomaly panels.
+const (
+	anomalyTSWidth      = 8
+	anomalyTSHeight     = 9
+	anomalyTableWidth   = 8
+	anomalyTableHeight  = 9
+)
+
 // GrowthRate returns a timeseries panel showing dataset daily growth rate.
-func GrowthRate() cog.Builder[dashboard.Panel] {
+func GrowthRate() *timeseries.PanelBuilder {
 	return timeseries.NewPanelBuilder().
 		Title("Dataset Daily Growth Rate").
 		Description("Estimated daily growth rate per dataset, derived from the 1-hour derivative of used bytes.").
+		Height(anomalyTSHeight).
+		Span(anomalyTSWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`deriv(zfs_dataset_used_bytes{%s}[1h]) * 86400`, PoolFilter()),
@@ -34,12 +44,14 @@ func GrowthRate() cog.Builder[dashboard.Panel] {
 
 // DeviationTable returns a table panel showing datasets outside their 7-day
 // baseline. Uses recording rules for average and standard deviation.
-func DeviationTable() cog.Builder[dashboard.Panel] {
+func DeviationTable() *table.PanelBuilder {
 	pf := PoolFilter()
 
 	return table.NewPanelBuilder().
 		Title("Datasets Outside Normal Range (7d Baseline)").
 		Description("Datasets whose current usage deviates from their 7-day average by more than 2 standard deviations. Uses recording rules zfs:dataset_used_bytes:avg7d and zfs:dataset_used_bytes:stddev7d.").
+		Height(anomalyTableHeight).
+		Span(anomalyTableWidth).
 		Datasource(DSRef()).
 		WithTarget(PromInstantQuery(fmt.Sprintf(`zfs_dataset_used_bytes{%s}`, pf), "", "Current")).
 		WithTarget(PromInstantQuery(fmt.Sprintf(`zfs:dataset_used_bytes:avg7d{%s}`, pf), "", "Avg7d")).
@@ -124,10 +136,12 @@ func deviationCalcField(alias, left, operator, right string) dashboard.DataTrans
 
 // PoolFillPrediction returns a timeseries panel showing predicted days until
 // each pool fills, based on 7-day linear trend.
-func PoolFillPrediction() cog.Builder[dashboard.Panel] {
+func PoolFillPrediction() *timeseries.PanelBuilder {
 	return timeseries.NewPanelBuilder().
 		Title("Pool Days Until Full (7d Trend)").
 		Description("Predicted days until pool is full based on linear extrapolation of free bytes over the past 7 days. Lower values indicate pools at risk of running out of space.").
+		Height(anomalyTSHeight).
+		Span(anomalyTSWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`zfs_pool_free_bytes{%s} / (-deriv(zfs_pool_free_bytes{%s}[7d])) / 86400 > 0`, PoolFilter(), PoolFilter()),

@@ -10,6 +10,14 @@ import (
 	"github.com/grafana/grafana-foundation-sdk/go/timeseries"
 )
 
+// Default grid sizes for dataset panels.
+const (
+	datasetTableWidth    = 8
+	datasetTableHeight   = 9
+	datasetTSWidth       = 8
+	datasetTSHeight      = 9
+)
+
 // organizeTransform returns a DataTransformerConfig that hides internal labels
 // and reorders columns for table panels.
 func organizeTransform(excludeByName map[string]bool, indexByName map[string]int) dashboard.DataTransformerConfig {
@@ -45,10 +53,12 @@ func datasetTableColumnOrder() map[string]int {
 }
 
 // TopDatasets returns a table panel showing top datasets ranked by used space.
-func TopDatasets() cog.Builder[dashboard.Panel] {
+func TopDatasets() *table.PanelBuilder {
 	return table.NewPanelBuilder().
 		Title("Top Datasets by Used Space").
 		Description("Top datasets ranked by current used space, sorted descending.").
+		Height(datasetTableHeight).
+		Span(datasetTableWidth).
 		Datasource(DSRef()).
 		WithTarget(PromInstantQuery(
 			fmt.Sprintf(`topk(25, zfs_dataset_used_bytes{%s})`, PoolFilter()),
@@ -78,10 +88,12 @@ func TopDatasets() cog.Builder[dashboard.Panel] {
 }
 
 // AvailableSpace returns a table panel showing available space per dataset.
-func AvailableSpace() cog.Builder[dashboard.Panel] {
+func AvailableSpace() *table.PanelBuilder {
 	return table.NewPanelBuilder().
 		Title("Dataset Available Space").
 		Description("Available space per dataset with pool and type information.").
+		Height(datasetTableHeight).
+		Span(datasetTableWidth).
 		Datasource(DSRef()).
 		WithTarget(PromInstantQuery(
 			fmt.Sprintf(`zfs_dataset_available_bytes{%s}`, PoolFilter()),
@@ -111,10 +123,12 @@ func AvailableSpace() cog.Builder[dashboard.Panel] {
 }
 
 // DatasetUsageOverTime returns a timeseries panel showing used bytes per dataset.
-func DatasetUsageOverTime() cog.Builder[dashboard.Panel] {
+func DatasetUsageOverTime() *timeseries.PanelBuilder {
 	return timeseries.NewPanelBuilder().
 		Title("Dataset Usage Over Time").
 		Description("Dataset used bytes over time, per dataset.").
+		Height(datasetTSHeight).
+		Span(datasetTSWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`zfs_dataset_used_bytes{%s}`, PoolFilter()),

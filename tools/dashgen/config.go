@@ -51,13 +51,16 @@ var DefaultConfig = Config{
 		{Key: "iscsi", Label: "iSCSI", UseZvols: true},
 	},
 	Dashboards: DashboardSet{Status: true, Details: true, Combined: true},
-	OutputDir:  "../../contrib/grafana",
+	OutputDir:  "../../contrib/grafana/data",
 }
 
 // RulesDir returns the Prometheus rules output directory, derived from
-// OutputDir by replacing the last path component with "prometheus".
+// OutputDir. Navigates up from the grafana data dir to contrib/, then
+// into prometheus/data/.
 func (c *Config) RulesDir() string {
-	return filepath.Join(filepath.Dir(c.OutputDir), "prometheus")
+	// OutputDir is .../contrib/grafana/data → go up to contrib, then prometheus/data.
+	contribDir := filepath.Dir(filepath.Dir(c.OutputDir))
+	return filepath.Join(contribDir, "prometheus", "data")
 }
 
 // Validate checks the config for errors.

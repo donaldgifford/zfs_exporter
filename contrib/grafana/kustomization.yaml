@@ -1,0 +1,26 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+
+configMapGenerator:
+  - name: zfs-status-dashboard
+    namespace: monitoring
+    files: [./data/zfs-status.json]
+    options:
+      disableNameSuffixHash: true
+  - name: zfs-details-dashboard
+    namespace: monitoring
+    files: [./data/zfs-details.json]
+    options:
+      disableNameSuffixHash: true
+  - name: zfs-combined-dashboard
+    namespace: monitoring
+    files: [./data/zfs-combined.json]
+    options:
+      disableNameSuffixHash: true
+
+resources:
+  - zfs-combined.yaml
+  - zfs-details.yaml
+  - zfs-status.yaml

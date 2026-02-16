@@ -2,6 +2,27 @@
 // same service configuration that drives dashboard generation.
 package rules
 
+// PrometheusRule is a Kubernetes PrometheusRule CR that wraps rule groups
+// for deployment via the Prometheus Operator.
+type PrometheusRule struct {
+	APIVersion string                 `yaml:"apiVersion"`
+	Kind       string                 `yaml:"kind"`
+	Metadata   PrometheusRuleMetadata `yaml:"metadata"`
+	Spec       PrometheusRuleSpec     `yaml:"spec"`
+}
+
+// PrometheusRuleMetadata holds the Kubernetes object metadata for a PrometheusRule.
+type PrometheusRuleMetadata struct {
+	Name      string            `yaml:"name"`
+	Namespace string            `yaml:"namespace"`
+	Labels    map[string]string `yaml:"labels"`
+}
+
+// PrometheusRuleSpec holds the spec for a PrometheusRule CR.
+type PrometheusRuleSpec struct {
+	Groups []RuleGroup `yaml:"groups"`
+}
+
 // RuleFile is the top-level Prometheus rules file structure.
 type RuleFile struct {
 	Groups []RuleGroup `yaml:"groups"`

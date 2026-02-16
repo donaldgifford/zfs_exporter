@@ -11,6 +11,22 @@ import (
 	"github.com/grafana/grafana-foundation-sdk/go/timeseries"
 )
 
+// Default grid sizes for service panels.
+const (
+	svcStatusAllWidth  = 8
+	svcStatusAllHeight = 4
+	svcMismatchWidth   = 4
+	svcMismatchHeight  = 4
+	svcExporterWidth   = 8
+	svcExporterHeight  = 4
+	svcStatWidth       = 4
+	svcStatHeight      = 8
+	svcTableWidth      = 10
+	svcTableHeight     = 8
+	svcTimelineWidth   = 10
+	svcTimelineHeight  = 8
+)
+
 // ServiceConfig mirrors the main config's ServiceConfig. The panels package
 // uses this to avoid importing the main package.
 type ServiceConfig struct {
@@ -21,10 +37,12 @@ type ServiceConfig struct {
 }
 
 // ServiceStatusAll returns a stat panel showing all monitored service statuses.
-func ServiceStatusAll() cog.Builder[dashboard.Panel] {
+func ServiceStatusAll() *stat.PanelBuilder {
 	return stat.NewPanelBuilder().
 		Title("Service Status").
 		Description("Shows whether monitored systemd services (ZFS, NFS, SMB, iSCSI) are active. Green = running, Red = down.").
+		Height(svcStatusAllHeight).
+		Span(svcStatusAllWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			"zfs_service_up",
@@ -42,7 +60,7 @@ func ServiceStatusAll() cog.Builder[dashboard.Panel] {
 
 // ShareMismatch returns a stat panel detecting when shares exist but the
 // service is down. Only applicable for services with a ShareMetric.
-func ShareMismatch(svc ServiceConfig) cog.Builder[dashboard.Panel] {
+func ShareMismatch(svc ServiceConfig) *stat.PanelBuilder {
 	expr := fmt.Sprintf(
 		`(count(%s == 1) > 0) and (zfs_service_up{%s} == 0)`,
 		svc.ShareMetric, ServiceFilter(svc.Key),
@@ -51,6 +69,8 @@ func ShareMismatch(svc ServiceConfig) cog.Builder[dashboard.Panel] {
 	return stat.NewPanelBuilder().
 		Title(fmt.Sprintf("%s Share Mismatch", svc.Label)).
 		Description(fmt.Sprintf("%s shares exist but %s service is down", svc.Label, svc.Label)).
+		Height(svcMismatchHeight).
+		Span(svcMismatchWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(expr, "", "A")).
 		Unit("none").
@@ -80,10 +100,12 @@ func ShareMismatch(svc ServiceConfig) cog.Builder[dashboard.Panel] {
 }
 
 // ExporterUp returns a stat panel showing whether the ZFS exporter is operational.
-func ExporterUp() cog.Builder[dashboard.Panel] {
+func ExporterUp() *stat.PanelBuilder {
 	return stat.NewPanelBuilder().
 		Title("Exporter Up").
 		Description("Shows whether the ZFS exporter itself is up and able to execute ZFS commands. Green = operational, Red = ZFS commands failing.").
+		Height(svcExporterHeight).
+		Span(svcExporterWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery("zfs_up", "ZFS commands", "A")).
 		Unit("none").
@@ -97,10 +119,12 @@ func ExporterUp() cog.Builder[dashboard.Panel] {
 }
 
 // ServiceStat returns a stat panel for a single service's up/down status.
-func ServiceStat(svc ServiceConfig) cog.Builder[dashboard.Panel] {
+func ServiceStat(svc ServiceConfig) *stat.PanelBuilder {
 	return stat.NewPanelBuilder().
 		Title(fmt.Sprintf("%s Service", svc.Label)).
 		Description(fmt.Sprintf("%s service up/down status.", svc.Label)).
+		Height(svcStatHeight).
+		Span(svcStatWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`zfs_service_up{%s}`, ServiceFilter(svc.Key)),
@@ -118,7 +142,7 @@ func ServiceStat(svc ServiceConfig) cog.Builder[dashboard.Panel] {
 
 // ShareTable returns a table panel showing share datasets for a service.
 // For services with UseZvols, it shows zvol inventory instead.
-func ShareTable(svc ServiceConfig) cog.Builder[dashboard.Panel] {
+func ShareTable(svc ServiceConfig) *table.PanelBuilder {
 	var expr, title string
 	if svc.UseZvols {
 		expr = fmt.Sprintf(`zfs_dataset_used_bytes{type="volume", %s}`, PoolFilter())
@@ -135,6 +159,8 @@ func ShareTable(svc ServiceConfig) cog.Builder[dashboard.Panel] {
 	b := table.NewPanelBuilder().
 		Title(title).
 		Description(fmt.Sprintf("Datasets shared via %s.", svc.Label)).
+		Height(svcTableHeight).
+		Span(svcTableWidth).
 		Datasource(DSRef()).
 		WithTarget(PromInstantQuery(expr, "", "A")).
 		Thresholds(ThresholdsGreenOnly()).
@@ -182,10 +208,12 @@ func ShareTable(svc ServiceConfig) cog.Builder[dashboard.Panel] {
 }
 
 // ServiceTimeline returns a timeseries panel showing service up/down over time.
-func ServiceTimeline(svc ServiceConfig) cog.Builder[dashboard.Panel] {
+func ServiceTimeline(svc ServiceConfig) *timeseries.PanelBuilder {
 	return timeseries.NewPanelBuilder().
 		Title(fmt.Sprintf("%s Service Timeline", svc.Label)).
 		Description(fmt.Sprintf("%s service up/down status over time. 1 = running, 0 = down.", svc.Label)).
+		Height(svcTimelineHeight).
+		Span(svcTimelineWidth).
 		Datasource(DSRef()).
 		WithTarget(PromQuery(
 			fmt.Sprintf(`zfs_service_up{%s}`, ServiceFilter(svc.Key)),

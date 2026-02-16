@@ -2,9 +2,9 @@ package rules
 
 import "fmt"
 
-// AlertRules generates alert rules. Service-specific mismatch alerts are only
-// generated for services with a ShareMetric configured.
-func AlertRules(services []ServiceConfig) RuleFile {
+// alertRuleGroups generates the alert rule groups. Service-specific mismatch
+// alerts are only generated for services with a ShareMetric configured.
+func alertRuleGroups(services []ServiceConfig) []RuleGroup {
 	rules := []Rule{
 		// Exporter health.
 		{
@@ -221,12 +221,32 @@ and
 		},
 	)
 
-	return RuleFile{
-		Groups: []RuleGroup{
-			{
-				Name:  "zfs_exporter",
-				Rules: rules,
+	return []RuleGroup{
+		{
+			Name:  "zfs_exporter",
+			Rules: rules,
+		},
+	}
+}
+
+// AlertRules generates the alert rules as a raw Prometheus RuleFile.
+func AlertRules(services []ServiceConfig) RuleFile {
+	return RuleFile{Groups: alertRuleGroups(services)}
+}
+
+// AlertPrometheusRule generates the alert rules wrapped in a
+// Kubernetes PrometheusRule CR.
+func AlertPrometheusRule(services []ServiceConfig) PrometheusRule {
+	return PrometheusRule{
+		APIVersion: "monitoring.coreos.com/v1",
+		Kind:       "PrometheusRule",
+		Metadata: PrometheusRuleMetadata{
+			Name:      "zfs-alerts",
+			Namespace: "monitoring",
+			Labels: map[string]string{
+				"prometheus": "system-rules-prometheus",
 			},
 		},
+		Spec: PrometheusRuleSpec{Groups: alertRuleGroups(services)},
 	}
 }

@@ -28,7 +28,7 @@ func BuildDetails(cfg DetailsConfig) (*dashboard.DashboardBuilder, error) {
 
 	// Row: Pool Capacity (expanded, panels as siblings).
 	b = b.WithRow(dashboard.NewRowBuilder("Pool Capacity")).
-		WithPanel(panels.PoolUsageOverTime()).
+		WithPanel(panels.PoolUsageOverTime().Span(10)).
 		WithPanel(panels.PoolUsageBars()).
 		WithPanel(panels.Fragmentation())
 

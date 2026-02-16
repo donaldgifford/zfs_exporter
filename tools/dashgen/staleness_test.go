@@ -44,13 +44,13 @@ func TestStaleness(t *testing.T) {
 		assertDashboardFresh(t, cfg.OutputDir, "zfs-combined.json", b)
 	})
 
-	t.Run("recording_rules.yml", func(t *testing.T) {
-		assertRulesFresh(t, cfg.RulesDir(), "recording_rules.yml", rules.RecordingRules())
+	t.Run("zfs-recording-rules.yaml", func(t *testing.T) {
+		assertRulesFresh(t, cfg.RulesDir(), "zfs-recording-rules.yaml", rules.RecordingPrometheusRule())
 	})
 
-	t.Run("alerts.yml", func(t *testing.T) {
+	t.Run("zfs-alerts.yaml", func(t *testing.T) {
 		rsvcs := toRulesServiceConfigs(cfg.Services)
-		assertRulesFresh(t, cfg.RulesDir(), "alerts.yml", rules.AlertRules(rsvcs))
+		assertRulesFresh(t, cfg.RulesDir(), "zfs-alerts.yaml", rules.AlertPrometheusRule(rsvcs))
 	})
 }
 
@@ -78,13 +78,14 @@ func assertDashboardFresh(t *testing.T, dir, filename string, b *dashboard.Dashb
 	}
 }
 
-func assertRulesFresh(t *testing.T, dir, filename string, rf rules.RuleFile) {
+func assertRulesFresh(t *testing.T, dir, filename string, rf any) {
 	t.Helper()
 
-	want, err := yaml.Marshal(rf)
+	body, err := yaml.Marshal(rf)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
+	want := append([]byte("---\n"), body...)
 
 	path := filepath.Join(dir, filename)
 	got, err := os.ReadFile(path)

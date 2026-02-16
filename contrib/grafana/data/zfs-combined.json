@@ -33,8 +33,8 @@
         "uid": "${datasource}"
       },
       "gridPos": {
-        "h": 9,
-        "w": 12,
+        "h": 4,
+        "w": 4,
         "x": 0,
         "y": 0
       },
@@ -108,9 +108,9 @@
         "uid": "${datasource}"
       },
       "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
+        "h": 4,
+        "w": 4,
+        "x": 4,
         "y": 0
       },
       "repeatDirection": "h",
@@ -174,10 +174,10 @@
         "uid": "${datasource}"
       },
       "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 9
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
       },
       "repeatDirection": "h",
       "options": {
@@ -255,10 +255,10 @@
         "uid": "${datasource}"
       },
       "gridPos": {
-        "h": 9,
-        "w": 12,
+        "h": 4,
+        "w": 4,
         "x": 12,
-        "y": 9
+        "y": 0
       },
       "repeatDirection": "h",
       "options": {
@@ -317,23 +317,23 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "predict_linear(zfs_pool_free_bytes{pool=~\"$pool\"}[7d], 30*24*3600) / zfs_pool_free_bytes{pool=~\"$pool\"}",
+          "expr": "zfs_pool_free_bytes{pool=~\"$pool\"} / (-deriv(zfs_pool_free_bytes{pool=~\"$pool\"}[7d])) / 86400",
           "legendFormat": "{{ pool }}",
           "refId": "A"
         }
       ],
       "title": "Pool Days Until Full",
-      "description": "Estimated days until pool reaches full capacity based on 7-day linear trend extrapolated to 30 days. Higher is better.",
+      "description": "Estimated days until pool reaches full capacity based on 7-day linear trend. Negative values (pool shrinking) display as 'Not filling'. Higher is better.",
       "transparent": false,
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
       "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 18
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
       },
       "repeatDirection": "h",
       "options": {
@@ -408,10 +408,10 @@
         "uid": "${datasource}"
       },
       "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 18
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 0
       },
       "repeatDirection": "h",
       "options": {
@@ -475,7 +475,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 4
       },
       "id": 0,
       "panels": [
@@ -499,6 +499,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 5
           },
           "repeatDirection": "h",
           "options": {
@@ -557,6 +563,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 5
           },
           "repeatDirection": "h",
           "options": {
@@ -628,6 +640,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 5
+          },
           "repeatDirection": "h",
           "options": {
             "legend": {
@@ -686,7 +704,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 13
       },
       "id": 0,
       "panels": [
@@ -708,6 +726,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 14
           },
           "repeatDirection": "h",
           "transformations": [
@@ -822,6 +846,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 14
+          },
           "repeatDirection": "h",
           "transformations": [
             {
@@ -932,6 +962,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 22
+          },
           "repeatDirection": "h",
           "options": {
             "legend": {
@@ -980,7 +1016,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 65
+        "y": 30
       },
       "id": 0,
       "panels": [
@@ -999,6 +1035,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 0,
+            "y": 31
           },
           "repeatDirection": "h",
           "options": {
@@ -1072,6 +1114,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 4,
+            "y": 31
           },
           "repeatDirection": "h",
           "transformations": [
@@ -1152,6 +1200,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 14,
+            "y": 31
+          },
           "repeatDirection": "h",
           "options": {
             "legend": {
@@ -1224,7 +1278,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 84
+        "y": 39
       },
       "id": 0,
       "panels": [
@@ -1243,6 +1297,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 0,
+            "y": 40
           },
           "repeatDirection": "h",
           "options": {
@@ -1316,6 +1376,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 4,
+            "y": 40
           },
           "repeatDirection": "h",
           "transformations": [
@@ -1396,6 +1462,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 14,
+            "y": 40
+          },
           "repeatDirection": "h",
           "options": {
             "legend": {
@@ -1468,7 +1540,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 103
+        "y": 48
       },
       "id": 0,
       "panels": [
@@ -1487,6 +1559,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 0,
+            "y": 49
           },
           "repeatDirection": "h",
           "options": {
@@ -1560,6 +1638,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 4,
+            "y": 49
           },
           "repeatDirection": "h",
           "transformations": [
@@ -1652,6 +1736,12 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 14,
+            "y": 49
+          },
           "repeatDirection": "h",
           "options": {
             "legend": {
@@ -1724,7 +1814,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 122
+        "y": 57
       },
       "id": 0,
       "panels": [
@@ -1743,6 +1833,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 58
           },
           "repeatDirection": "h",
           "options": {
@@ -1820,6 +1916,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 58
           },
           "repeatDirection": "h",
           "transformations": [
@@ -2030,6 +2132,12 @@
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 66
           },
           "repeatDirection": "h",
           "options": {

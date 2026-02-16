@@ -1,0 +1,18 @@
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: zfs-combined-dashboard
+  namespace: monitoring
+spec:
+  allowCrossNamespaceImport: true
+  instanceSelector:
+    matchLabels:
+      app: grafana
+  folder: Infrastructure
+  configMapRef:
+    name: zfs-combined-dashboard
+    key: zfs-combined.json
+  datasources:
+    - inputName: DS_PROMETHEUS
+      datasourceName: Prometheus
