@@ -37,7 +37,7 @@ COVERAGE_OUT := coverage.out
 ###############
 ##@ Go Development
 
-.PHONY: build
+.PHONY: build dashboards lint-dashboards
 .PHONY: test test-all test-coverage
 .PHONY: lint lint-fix fmt clean
 .PHONY: run run-local test-api ci check
@@ -52,6 +52,16 @@ build-core: ## Build core binary
 	@mkdir -p $(BIN_DIR)
 	@go build -o $(BIN_DIR)/$(PROJECT_NAME) ./cmd/$(PROJECT_NAME)
 	@echo "✓ Core binaries built"
+
+dashboards: ## Regenerate Grafana dashboard JSON
+	@ $(MAKE) --no-print-directory log-$@
+	@cd tools/dashgen && go generate .
+	@echo "✓ Dashboards regenerated"
+
+lint-dashboards: ## Validate generated dashboard JSON
+	@ $(MAKE) --no-print-directory log-$@
+	@cd tools/dashgen && go run . --validate
+	@echo "✓ Dashboard validation passed"
 
 ## Testing
 
